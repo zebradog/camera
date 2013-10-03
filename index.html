@@ -26,11 +26,12 @@
     .hidden{
       visibility:hidden;
     }
+
+    #vertex0 {left:0px; top:0px;}
+    #vertex1 {left:640px; top:0px;}
+    #vertex2 {left:640px; top:480px;}
+    #vertex3 {left:0px; top:480px;}
     
-    #vertex1 {left:100px; top:200px;}
-    #vertex2 {left:300px; top:200px;}
-    #vertex3 {left:300px; top:100px;}
-    #vertex0 {left:100px; top:100px;}
 
     .vertex {
       width:50px;
@@ -148,15 +149,17 @@ function noStream(e)
 <script>
 var SCREEN_HEIGHT = 480;
 var SCREEN_WIDTH = 640;
+var myMatrix = Array();
 
 var configThreshold = {
   soft: 0.001,
   threshold: 0.3
 };
 
-var container, scene, camera, renderer, composer;
+var container, scene, camera, renderer, composer, viewThreshold;
 var video, videoTexture;
 var perspectiveEffect, thresholdEffect;
+
 
 init();
 animate();
@@ -193,7 +196,8 @@ function init()
 	video = document.getElementById( 'video' );
 	videoTexture = new THREE.Texture( video );
 	
-	var viewThreshold = new THREE.Mesh( new THREE.PlaneGeometry( 2,2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
+	viewThreshold = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
+
     viewThreshold.material.depthTest = false;
     viewThreshold.material.depthWrite = false;
 	scene.add(viewThreshold);
@@ -217,7 +221,7 @@ function animate()
 {
     requestAnimationFrame( animate );
 	if ( video.readyState === video.HAVE_ENOUGH_DATA )
-      videoTexture.needsUpdate = true;
+       videoTexture.needsUpdate = true;
     composer.render();
     stats.update();
 }
@@ -241,10 +245,12 @@ THREE.Vector2.prototype.middle = function(v){
 }
 
 $(function() {
+
     updateCrop = function() {
   
         var canvas = document.getElementById("vertexCanvas");
         var context = canvas.getContext("2d");
+        
         //vertices of crop box
         var p = [
           new THREE.Vector2(),
@@ -252,15 +258,19 @@ $(function() {
           new THREE.Vector2(),
           new THREE.Vector2()
         ];
-        //unit normals of crop box
-        var n = [
-          new THREE.Vector2(),
-          new THREE.Vector2(),
-          new THREE.Vector2(),
-          new THREE.Vector2()
+        //This is always the original source state
+        var screen = [
+          new THREE.Vector2(0,0),
+          new THREE.Vector2(1,0),
+          new THREE.Vector2(1,1),
+          new THREE.Vector2(0,1)
         ];
-        var normalLength = 0.025;
-  
+        var polygon = [
+          new THREE.Vector2(0,0),
+          new THREE.Vector2(.25,0),
+          new THREE.Vector2(.25,.25),
+          new THREE.Vector2(0,.25)
+        ];
         context.strokeStyle = "rgba(0, 100, 200,0.5)";
         context.fillStyle = "rgba(0, 100, 200,0.15)";
         context.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
@@ -268,6 +278,7 @@ $(function() {
         //calculate and display the crop box and vertices
         context.beginPath();
         var first = true;
+
         $("#vertexcontainer .vertex").each(function() {
             var position = $(this).position();
             var i = $(this).attr('data-vertexnumber');
@@ -285,56 +296,27 @@ $(function() {
         context.closePath();
         context.stroke();
         context.fill();
-  
-        //calculate unit normals
-        n[0] = n[0].subVectors(p[1],p[0]).perpendicular();
-        n[1] = n[1].subVectors(p[2],p[1]).perpendicular();
-        n[2] = n[2].subVectors(p[3],p[2]).perpendicular();
-        n[3] = n[3].subVectors(p[0],p[3]).perpendicular();
-  
-        //display the normals
-        var j = 3;
-        for(var i = 0; i < 4; i++){
-          var middle = p[i].middle(p[j]);
-          var normal = new THREE.Vector2().subVectors(middle,n[j].multiplyScalar(normalLength));
-          context.beginPath();
-          context.moveTo(middle.x*SCREEN_WIDTH,middle.y*SCREEN_HEIGHT);
-          context.lineTo(normal.x*SCREEN_WIDTH,normal.y*SCREEN_HEIGHT);
-          context.closePath();
-          context.stroke();
-          j = i;
+        
+        //Put code here
+        myMatrix = findHomography(screen,p);
+        
+        context.beginPath();
+        first = true;
+        for(i = 0; i < 4; i++){
+          polygon[i] = fromWarpToScreenCoord(polygon[i].x,polygon[i].y);
+          if (first) {
+              context.moveTo(polygon[i].x*SCREEN_WIDTH, polygon[i].y*SCREEN_HEIGHT);
+              first = false;
+          } else {
+              context.lineTo(polygon[i].x*SCREEN_WIDTH, polygon[i].y*SCREEN_HEIGHT);
+          }
         }
-  
-        //update the perspective shader, based on
-        //http://math.stackexchange.com/a/104595
-        var a = perspectiveEffect.uniforms['a'].value = n[0].x;
-        var b = perspectiveEffect.uniforms['b'].value = n[0].y;
-        var c = perspectiveEffect.uniforms['c'].value = -p[0].dot(n[0]);
-        var d = perspectiveEffect.uniforms['d'].value = n[0].x + n[2].x;
-        var e = perspectiveEffect.uniforms['e'].value = n[0].y + n[2].y;
-        var f = perspectiveEffect.uniforms['f'].value = -p[0].dot(n[0]) - p[2].dot(n[2]);
-        var g = perspectiveEffect.uniforms['g'].value = n[1].x;
-        var h = perspectiveEffect.uniforms['h'].value = n[1].y;
-        var i = perspectiveEffect.uniforms['i'].value = -p[0].dot(n[1]);
-        var j = perspectiveEffect.uniforms['j'].value = n[1].x + n[3].x;
-        var k = perspectiveEffect.uniforms['k'].value = n[1].y + n[3].y;
-        var l = perspectiveEffect.uniforms['l'].value = -p[0].dot(n[1]) - p[2].dot(n[3]);
-  
-        var u = 0.5;
-        var v = 0.5;
-        
-        var uda = u*(d-a);
-        var ueb = u*(e-b);
-        var ufc = u*(f-c);
-        var vjg = v*(j-g);
-        var vkh = v*(k-h);
-        var vli = v*(l-i);
-        
-        var x = (vkh*ufc-vli*ueb)/(vjg*ueb-vkh*uda);
-        var y = (vli*uda-ufc*vjg)/(vjg*ueb-vkh*uda);
-  
-        console.log(x+','+y);
-  
+        context.closePath();
+        context.strokeStyle="red";
+        context.stroke();
+        context.fillStyle="red";
+        context.fill();
+
     };
 
     $( ".vertex" ).draggable({
@@ -349,8 +331,153 @@ $(function() {
         stop: updateCrop
     });
 
-    updateCrop();
+
+    function findHomography(src, dst){
+      // create the equation system to be solved
+      //
+      // from: Multiple View Geometry in Computer Vision 2ed
+      //       Hartley R. and Zisserman A.
+      //
+      // x' = xH
+      // where H is the homography: a 3 by 3 matrix
+      // that transformed to inhomogeneous coordinates for each point
+      // gives the following equations for each point:
+      //
+      // x' * (h31*x + h32*y + h33) = h11*x + h12*y + h13
+      // y' * (h31*x + h32*y + h33) = h21*x + h22*y + h23
+      //
+      // as the homography is scale independent we can let h33 be 1 (indeed any of the terms)
+      // so for 4 points we have 8 equations for 8 terms to solve: h11 - h32
+      // after ordering the terms it gives the following matrix
+      // that can be solved with gaussian elimination:
+      
+      var points = [ 
+                [-src[0].x, -src[0].y, -1,   0,   0,  0, src[0].x*dst[0].x, src[0].y*dst[0].x, -dst[0].x ], // h11
+                [  0,   0,  0, -src[0].x, -src[0].y, -1, src[0].x*dst[0].y, src[0].y*dst[0].y, -dst[0].y ], // h12
+      
+                [-src[1].x, -src[1].y, -1,   0,   0,  0, src[1].x*dst[1].x, src[1].y*dst[1].x, -dst[1].x ], // h13
+                [  0,   0,  0, -src[1].x, -src[1].y, -1, src[1].x*dst[1].y, src[1].y*dst[1].y, -dst[1].y ], // h21
+      
+                [-src[2].x, -src[2].y, -1,   0,   0,  0, src[2].x*dst[2].x, src[2].y*dst[2].x, -dst[2].x ], // h22
+                [  0,   0,  0, -src[2].x, -src[2].y, -1, src[2].x*dst[2].y, src[2].y*dst[2].y, -dst[2].y ], // h23
+      
+                [-src[3].x, -src[3].y, -1,   0,   0,  0, src[3].x*dst[3].x, src[3].y*dst[3].x, -dst[3].x ], // h31
+                [  0,   0,  0, -src[3].x, -src[3].y, -1, src[3].x*dst[3].y, src[3].y*dst[3].y, -dst[3].y ]  // h32
+      ];
+      
+      var points = gaussianElimination(points, 8);
+      
+      // gaussian elimination gives the results of the equation system
+      // in the last column of the original matrix.
+      // opengl needs the transposed 4x4 matrix:
+      var matrix = [ points[0],points[3],0,points[6], // h11  h21 0 h31
+                  points[1],points[4],0,points[7], // h12  h22 0 h32
+                  0        ,0        ,0,0,         // 0    0   0 0
+                  points[2],points[5],0,1];        // h13  h23 0 h33
+      
+      return matrix;
+    }
+  
+    function gaussianElimination(A, N){
+      // ported to c from pseudocode in
+      // http://en.wikipedia.org/wiki/Gaussian_elimination
+  
+      var i, j, k;
+      
+      for (i = 0; i < N; i++){
+          // find row with maximum in column i
+          var max_row = i;
+          for (j = i; j < N; j++){
+              if (Math.abs(A[j][i]) > Math.abs(A[max_row][i]))
+                  max_row = j;
+          }
+      
+          // swap max row with row i of [A:y]
+          for (k = i; k < N + 1; k++){
+              var tmp       = A[i][k];
+              A[i][k]       = A[max_row][k];
+              A[max_row][k] = tmp;
+          }
+          
+          // eliminate lower diagonal elements of [A]
+          for (j = i + 1; j < N; j++){
+              for (k = N; k > i; k--){
+                  if (A[i][i] == 0.0){
+                      console.log("singular");
+                      return;
+                  }
+                  else
+                      A[j][k] = A[j][k] - A[i][k]*A[j][i]/A[i][i];
+              }
+          }
+      }
+      
+      return substitute(A,N);
+  
+    }
+  
+    function substitute(A,N){
+        var j, k, X = Array();
+
+        for (j = N - 1; j >= 0; j--){
+            var sum = 0.0;
+            for (k = j+1; k < N; k++)
+                sum += A[j][k]*X[k];
+
+            X[j] = (A[j][N] - sum)/A[j][j];
+        }
+        
+        return X;
+    }
+    
+    
+    function fromScreenToWarpCoord(u, v){
+        var screenPoint = new THREE.Vector4(u,v,0,1);
+
+        // i create a ofMatrix4x4 with the ofxGLWarper myMatrixData in column order
+        var myThreejsMatrix = new THREE.Matrix4(myMatrix[0], myMatrix[4],myMatrix[8], myMatrix[12],
+                                                myMatrix[1], myMatrix[5],myMatrix[9], myMatrix[13],
+                                                myMatrix[2], myMatrix[6],myMatrix[10],myMatrix[14],
+                                                myMatrix[3], myMatrix[7],myMatrix[11],myMatrix[15]);
+
+        var invertedMyMatrix = myOFmatrix.getInverse(myThreejsMatrix);	
+
+        // multiply both to get the point transformed by the matrix
+        var warpedPoint = mousePoint.applyMatrix4(invertedMyMatrix);
+
+        // we need to normalize the value as described here : http://tech.groups.yahoo.com/group/OpenCV/message/80121
+        warpedPoint.x = warpedPoint.x / warpedPoint.w;
+        warpedPoint.y = warpedPoint.y / warpedPoint.w;
+        warpedPoint.z = warpedPoint.z / warpedPoint.w;
+
+        return new THREE.Vector2(warpedPoint.x, warpedPoint.y);
+    }
+
+
+    function fromWarpToScreenCoord(x, y){
+        var warpedPoint = new THREE.Vector4(x,y,0,1);
+
+        // Use Three.js to perform matrix multiplcation
+        var myThreejsMatrix = new THREE.Matrix4(myMatrix[0], myMatrix[4],myMatrix[8], myMatrix[12],
+                                                myMatrix[1], myMatrix[5],myMatrix[9], myMatrix[13],
+                                                myMatrix[2], myMatrix[6],myMatrix[10],myMatrix[14],
+                                                myMatrix[3], myMatrix[7],myMatrix[11],myMatrix[15]);
+
+        // multiply both to get the point transformed by the matrix
+        var screenPoint = warpedPoint.applyMatrix4(myThreejsMatrix);
+
+        screenPoint.x = screenPoint.x / screenPoint.w;
+        screenPoint.y = screenPoint.y / screenPoint.w;
+        screenPoint.z = screenPoint.z / screenPoint.w;
+
+        return new THREE.Vector2(screenPoint.x, screenPoint.y);
+    }
+
+  
+   updateCrop();
 });
+
+
 </script>
 
 
