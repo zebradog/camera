@@ -371,9 +371,9 @@ $(function() {
       // in the last column of the original matrix.
       // opengl needs the transposed 4x4 matrix:
       var matrix = [ points[0],points[3],0,points[6], // h11  h21 0 h31
-                  points[1],points[4],0,points[7], // h12  h22 0 h32
-                  0        ,0        ,0,0,         // 0    0   0 0
-                  points[2],points[5],0,1];        // h13  h23 0 h33
+                     points[1],points[4],0,points[7], // h12  h22 0 h32
+                     0        ,0        ,0,0,         // 0    0   0 0
+                     points[2],points[5],0,1];        // h13  h23 0 h33
       
       return matrix;
     }
@@ -443,7 +443,7 @@ $(function() {
         var invertedMyMatrix = myOFmatrix.getInverse(myThreejsMatrix);	
 
         // multiply both to get the point transformed by the matrix
-        var warpedPoint = mousePoint.applyMatrix4(invertedMyMatrix);
+        var warpedPoint = screenPoint.applyMatrix4(invertedMyMatrix);
 
         // we need to normalize the value as described here : http://tech.groups.yahoo.com/group/OpenCV/message/80121
         warpedPoint.x = warpedPoint.x / warpedPoint.w;
