@@ -9,7 +9,7 @@ THREE.PerspectiveShader = {
 
 	uniforms: {
 		"tDiffuse": { type: "t", value: null },
-     "h":       { type: "mat4", value: new THREE.Matrix4() }
+     "h":       { type: "m4", value: new THREE.Matrix4() }
 	},
 
 	vertexShader: [
@@ -34,6 +34,25 @@ THREE.PerspectiveShader = {
     
         "float u = vUv.x;",
         "float v = vUv.y;",
+        
+        "mat4 m;",
+        "m[0][0] = h[0][0];",
+        "m[0][1] = h[1][0];",
+        "m[0][2] = h[2][0];",
+        "m[0][3] = h[3][0];",
+        "m[1][0] = h[0][1];",
+        "m[1][1] = h[1][1];",
+        "m[1][2] = h[2][1];",
+        "m[1][3] = h[3][1];",
+        "m[2][0] = h[0][2];",
+        "m[2][1] = h[1][2];",
+        "m[2][2] = h[2][2];",
+        "m[2][3] = h[3][2];",
+        "m[3][0] = h[0][3];",
+        "m[3][1] = h[1][3];",
+        "m[3][2] = h[2][3];",
+        "m[3][3] = h[3][3];",
+        
         
         "float x = u;",
         "float y = v;",
