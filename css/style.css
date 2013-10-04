@@ -1,0 +1,77 @@
+.hidden{
+  visibility:hidden;
+}
+
+#vertex0 {left:0px; top:0px;}
+#vertex1 {left:640px; top:0px;}
+#vertex2 {left:640px; top:480px;}
+#vertex3 {left:0px; top:480px;}
+
+
+.vertex {
+  width:50px;
+  height:50px;
+  position:absolute;
+  display:none;
+}
+
+#vertexcontainer .vertex {display:block;}
+
+.vertex div.handle {
+    width:40px;
+    height:40px;
+    position:relative;
+    left:-20px;
+    top:-20px;
+    border:1px solid rgb(0, 100, 200);
+    border-radius:25px;
+    z-index:1;
+    opacity:0.5;
+    background-color: #ddd;
+    color:rgb(0, 100, 200);
+    text-indent:-50px;
+    line-height:5px;
+    font-family:sans-serif;
+    font-size:10px;
+}
+.vertex .handle:after{
+  content:' ';
+  height:40px;
+  width:1px;
+  background:rgb(0, 100, 200);
+  position:absolute;
+  left:20px;
+  top:0px;
+  z-index:0;
+}
+.vertex .handle:before{
+  content:' ';
+  height:1px;
+  width:40px;
+  background:rgb(0, 100, 200);
+  position:absolute;
+  left:0px;
+  top:20px;
+  z-index:0;
+}
+
+.currenthandle {width:40px; height:40px; border:1px solid red; position:absolute; background-color:blue;}
+body{
+  text-align:center;
+}
+#container{
+  height:480px;
+  width:640px;
+  margin:-240px 0 0 -320px;
+  position:absolute;
+  border:1px solid rgba(0, 100, 200,0.5);
+  top:50%;
+  left:50%;
+}
+
+ #vertexcontainer, #vertexCanvas, #video, #visualElements{
+  position: absolute;
+  left:0px;
+  top:0px;
+  display:block;
+}

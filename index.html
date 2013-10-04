@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+
 	<title>Camera</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
@@ -22,86 +23,14 @@
     <script src="js/lib/stats.min.js"></script>
     <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
     
-    <style type="text/css">
-    .hidden{
-      visibility:hidden;
-    }
+    <script src="js/webcam.js"></script>
+    <script src="js/homography.js"></script>
+    <script src="js/warp.js"></script>
     
-    #vertex1 {left:100px; top:200px;}
-    #vertex2 {left:300px; top:200px;}
-    #vertex3 {left:300px; top:100px;}
-    #vertex0 {left:100px; top:100px;}
-
-    .vertex {
-      width:50px;
-      height:50px;
-      position:absolute;
-      display:none;
-    }
-
-    #vertexcontainer .vertex {display:block;}
-
-    .vertex div.handle {
-        width:40px;
-        height:40px;
-        position:relative;
-        left:-20px;
-        top:-20px;
-        border:1px solid rgb(0, 100, 200);
-        border-radius:25px;
-        z-index:1;
-        opacity:0.5;
-        background-color: #ddd;
-        color:rgb(0, 100, 200);
-        text-indent:-50px;
-        line-height:5px;
-        font-family:sans-serif;
-        font-size:10px;
-    }
-    .vertex .handle:after{
-      content:' ';
-      height:40px;
-      width:1px;
-      background:rgb(0, 100, 200);
-      position:absolute;
-      left:20px;
-      top:0px;
-      z-index:0;
-    }
-    .vertex .handle:before{
-      content:' ';
-      height:1px;
-      width:40px;
-      background:rgb(0, 100, 200);
-      position:absolute;
-      left:0px;
-      top:20px;
-      z-index:0;
-    }
-
-    .currenthandle {width:40px; height:40px; border:1px solid red; position:absolute; background-color:blue;}
-    body{
-      text-align:center;
-    }
-    #container{
-      height:480px;
-      width:640px;
-      margin:-240px 0 0 -320px;
-      position:absolute;
-      border:1px solid rgba(0, 100, 200,0.5);
-      top:50%;
-      left:50%;
-    }
-    
-     #vertexcontainer, #vertexCanvas, #video, #visualElements{
-      position: absolute;
-      left:0px;
-      top:0px;
-      display:block;
-    }
-    </style>
+     <link href="css/style.css" rel="stylesheet" type="text/css">
     
 </head>
+
 <body>
 
 <video id="video" autoplay width="640" height="480" class="hidden"></video>
@@ -119,44 +48,19 @@
 </div>
 
 <script>
-navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-window.URL = window.URL || window.webkitURL;
-
-var camvideo = document.getElementById('video');
-
-if (!navigator.getUserMedia)  console.error('navigator.getUserMedia() is not available.');
-else {
-  navigator.getUserMedia({video: true}, gotStream, noStream);
-}
-
-function gotStream(stream) 
-{
-	if (window.URL) camvideo.src = window.URL.createObjectURL(stream);   
-	else  camvideo.src = stream; // Opera
-	camvideo.onerror = function(e) {  stream.stop();  };
-	stream.onended = noStream;
-}
-
-function noStream(e) 
-{
-	var msg = 'No camera available.';
-	if (e.code == 1) msg = 'User denied access to use camera.'; 
-	console.error(msg);
-}
-</script>
-
-<script>
 var SCREEN_HEIGHT = 480;
 var SCREEN_WIDTH = 640;
+var myMatrix = Array();
 
 var configThreshold = {
   soft: 0.001,
   threshold: 0.3
 };
 
-var container, scene, camera, renderer, composer;
+var container, scene, camera, renderer, composer, viewThreshold;
 var video, videoTexture;
 var perspectiveEffect, thresholdEffect;
+
 
 init();
 animate();
@@ -164,87 +68,74 @@ animate();
 function init() 
 {
 
-    stats = new Stats();
-    stats.domElement.style.position	= 'absolute';
-    stats.domElement.style.bottom	= '0px';
-    document.body.appendChild( stats.domElement );
-  
-    var gui = new dat.GUI();
-    gui.add(configThreshold, 'threshold',0,1).onChange(function(value) {
-        thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
-    });
-    gui.add(configThreshold, 'soft',0,1).onChange(function(value) {
-        thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
-    });
+  webcam('video');
 
-	scene = new THREE.Scene();
-	
-    camera = new THREE.Camera();
-    scene.add(camera);
-  
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-    renderer.domElement.width = SCREEN_WIDTH;
-    renderer.domElement.height = SCREEN_HEIGHT;
-    renderer.autoClear = false;
-	container = document.getElementById( 'container' );
-    container.insertBefore(renderer.domElement, container.firstChild);
-	
-	video = document.getElementById( 'video' );
-	videoTexture = new THREE.Texture( video );
-	
-	var viewThreshold = new THREE.Mesh( new THREE.PlaneGeometry( 2,2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
-    viewThreshold.material.depthTest = false;
-    viewThreshold.material.depthWrite = false;
-	scene.add(viewThreshold);
-  
-    // postprocessing
-    composer = new THREE.EffectComposer( renderer );
-    composer.addPass( new THREE.RenderPass( scene, camera ) );
+  stats = new Stats();
+  stats.domElement.style.position	= 'absolute';
+  stats.domElement.style.bottom	= '0px';
+  document.body.appendChild( stats.domElement );
 
-    thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
-    thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
-    thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
-    composer.addPass( thresholdEffect );
+  var gui = new dat.GUI();
+  gui.add(configThreshold, 'threshold',0,1).onChange(function(value) {
+      thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
+  });
+  gui.add(configThreshold, 'soft',0,1).onChange(function(value) {
+      thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
+  });
+
+  scene = new THREE.Scene();
+
+  camera = new THREE.Camera();
+  scene.add(camera);
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  renderer.domElement.width = SCREEN_WIDTH;
+  renderer.domElement.height = SCREEN_HEIGHT;
+  renderer.autoClear = false;
+  container = document.getElementById( 'container' );
+  container.insertBefore(renderer.domElement, container.firstChild);
+
+  video = document.getElementById( 'video' );
+  videoTexture = new THREE.Texture( video );
   
-    perspectiveEffect = new THREE.ShaderPass( THREE.PerspectiveShader );
-    perspectiveEffect.renderToScreen = true;
-    composer.addPass( perspectiveEffect );
+  viewThreshold = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
+
+  viewThreshold.material.depthTest = false;
+  viewThreshold.material.depthWrite = false;
+  scene.add(viewThreshold);
+
+  // postprocessing
+  composer = new THREE.EffectComposer( renderer );
+  composer.addPass( new THREE.RenderPass( scene, camera ) );
+
+  thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
+  thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
+  thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
+  composer.addPass( thresholdEffect );
+
+  perspectiveEffect = new THREE.ShaderPass( THREE.PerspectiveShader );
+  perspectiveEffect.renderToScreen = true;
+  composer.addPass( perspectiveEffect );
   
 }
 
 function animate() 
 {
-    requestAnimationFrame( animate );
+  requestAnimationFrame( animate );
 	if ( video.readyState === video.HAVE_ENOUGH_DATA )
-      videoTexture.needsUpdate = true;
-    composer.render();
-    stats.update();
-}
-
-
-</script>
-
-<script type="text/javascript">
-//http://www.openframeworks.cc/documentation/math/ofVec2f.html#show_getPerpendicular
-THREE.Vector2.prototype.perpendicular = function(){
-    var length = Math.sqrt( this.x*this.x + this.y*this.y );
-	if( length > 0 )
-		return new THREE.Vector2( -(this.y/length), this.x/length );
-	else
-		return new THREE.Vector2();
-}
-
-//http://www.openframeworks.cc/documentation/math/ofVec2f.html#show_getMiddle
-THREE.Vector2.prototype.middle = function(v){
-  return new THREE.Vector2((this.x+v.x)/2.0,(this.y+v.y)/2.0);
+    videoTexture.needsUpdate = true;
+  composer.render();
+  stats.update();
 }
 
 $(function() {
+
     updateCrop = function() {
   
         var canvas = document.getElementById("vertexCanvas");
         var context = canvas.getContext("2d");
+        
         //vertices of crop box
         var p = [
           new THREE.Vector2(),
@@ -252,15 +143,19 @@ $(function() {
           new THREE.Vector2(),
           new THREE.Vector2()
         ];
-        //unit normals of crop box
-        var n = [
-          new THREE.Vector2(),
-          new THREE.Vector2(),
-          new THREE.Vector2(),
-          new THREE.Vector2()
+        //This is always the original source state
+        var screen = [
+          new THREE.Vector2(0,0),
+          new THREE.Vector2(1,0),
+          new THREE.Vector2(1,1),
+          new THREE.Vector2(0,1)
         ];
-        var normalLength = 0.025;
-  
+        var polygon = [
+          new THREE.Vector2(0,0),
+          new THREE.Vector2(.25,0),
+          new THREE.Vector2(.25,.25),
+          new THREE.Vector2(0,.25)
+        ];
         context.strokeStyle = "rgba(0, 100, 200,0.5)";
         context.fillStyle = "rgba(0, 100, 200,0.15)";
         context.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
@@ -268,6 +163,7 @@ $(function() {
         //calculate and display the crop box and vertices
         context.beginPath();
         var first = true;
+
         $("#vertexcontainer .vertex").each(function() {
             var position = $(this).position();
             var i = $(this).attr('data-vertexnumber');
@@ -285,56 +181,29 @@ $(function() {
         context.closePath();
         context.stroke();
         context.fill();
-  
-        //calculate unit normals
-        n[0] = n[0].subVectors(p[1],p[0]).perpendicular();
-        n[1] = n[1].subVectors(p[2],p[1]).perpendicular();
-        n[2] = n[2].subVectors(p[3],p[2]).perpendicular();
-        n[3] = n[3].subVectors(p[0],p[3]).perpendicular();
-  
-        //display the normals
-        var j = 3;
-        for(var i = 0; i < 4; i++){
-          var middle = p[i].middle(p[j]);
-          var normal = new THREE.Vector2().subVectors(middle,n[j].multiplyScalar(normalLength));
-          context.beginPath();
-          context.moveTo(middle.x*SCREEN_WIDTH,middle.y*SCREEN_HEIGHT);
-          context.lineTo(normal.x*SCREEN_WIDTH,normal.y*SCREEN_HEIGHT);
-          context.closePath();
-          context.stroke();
-          j = i;
+        
+        //Put code here
+        myMatrix = findHomography(screen,p);
+        
+        context.beginPath();
+        first = true;
+        for(i = 0; i < 4; i++){
+          polygon[i] = fromWarpToScreenCoord(polygon[i].x,polygon[i].y,myMatrix);
+          if (first) {
+              context.moveTo(polygon[i].x*SCREEN_WIDTH, polygon[i].y*SCREEN_HEIGHT);
+              first = false;
+          } else {
+              context.lineTo(polygon[i].x*SCREEN_WIDTH, polygon[i].y*SCREEN_HEIGHT);
+          }
         }
+        context.closePath();
+        context.strokeStyle="red";
+        context.stroke();
+        context.fillStyle="red";
+        context.fill();
   
-        //update the perspective shader, based on
-        //http://math.stackexchange.com/a/104595
-        var a = perspectiveEffect.uniforms['a'].value = n[0].x;
-        var b = perspectiveEffect.uniforms['b'].value = n[0].y;
-        var c = perspectiveEffect.uniforms['c'].value = -p[0].dot(n[0]);
-        var d = perspectiveEffect.uniforms['d'].value = n[0].x + n[2].x;
-        var e = perspectiveEffect.uniforms['e'].value = n[0].y + n[2].y;
-        var f = perspectiveEffect.uniforms['f'].value = -p[0].dot(n[0]) - p[2].dot(n[2]);
-        var g = perspectiveEffect.uniforms['g'].value = n[1].x;
-        var h = perspectiveEffect.uniforms['h'].value = n[1].y;
-        var i = perspectiveEffect.uniforms['i'].value = -p[0].dot(n[1]);
-        var j = perspectiveEffect.uniforms['j'].value = n[1].x + n[3].x;
-        var k = perspectiveEffect.uniforms['k'].value = n[1].y + n[3].y;
-        var l = perspectiveEffect.uniforms['l'].value = -p[0].dot(n[1]) - p[2].dot(n[3]);
-  
-        var u = 0.5;
-        var v = 0.5;
-        
-        var uda = u*(d-a);
-        var ueb = u*(e-b);
-        var ufc = u*(f-c);
-        var vjg = v*(j-g);
-        var vkh = v*(k-h);
-        var vli = v*(l-i);
-        
-        var x = (vkh*ufc-vli*ueb)/(vjg*ueb-vkh*uda);
-        var y = (vli*uda-ufc*vjg)/(vjg*ueb-vkh*uda);
-  
-        console.log(x+','+y);
-  
+        console.log(fromScreenToWarpCoord(0.0,0.0,myMatrix));
+
     };
 
     $( ".vertex" ).draggable({
@@ -348,11 +217,9 @@ $(function() {
         drag: updateCrop,
         stop: updateCrop
     });
-
-    updateCrop();
+  
+   updateCrop();
 });
 </script>
-
-
 </body>
 </html>
