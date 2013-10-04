@@ -50,7 +50,7 @@
 <script>
 var SCREEN_HEIGHT = 480;
 var SCREEN_WIDTH = 640;
-var myMatrix = Array();
+var homographyMatrix = Array();
 
 var configThreshold = {
   soft: 0.001,
@@ -181,14 +181,14 @@ $(function() {
         context.closePath();
         context.stroke();
         context.fill();
-        
-        //Put code here
-        myMatrix = findHomography(screen,p);
-        
-        context.beginPath();
+  
+        homographyMatrix = findHomography(screen,p);
+  
+        //warp debug output
+        /*context.beginPath();
         first = true;
         for(i = 0; i < 4; i++){
-          polygon[i] = fromWarpToScreenCoord(polygon[i].x,polygon[i].y,myMatrix);
+          polygon[i] = fromWarpToScreenCoord(polygon[i].x,polygon[i].y,homographyMatrix);
           if (first) {
               context.moveTo(polygon[i].x*SCREEN_WIDTH, polygon[i].y*SCREEN_HEIGHT);
               first = false;
@@ -200,9 +200,8 @@ $(function() {
         context.strokeStyle="red";
         context.stroke();
         context.fillStyle="red";
-        context.fill();
+        context.fill();*/
   
-        console.log(fromScreenToWarpCoord(0.0,0.0,myMatrix));
 
     };
 

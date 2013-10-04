@@ -24,8 +24,8 @@ function fromScreenToWarpCoord(u, v, h){
                               h[2], h[6],h[10],h[14],
                               h[3], h[7],h[11],h[15]);
 
-    //var invertedMyMatrix = new THREE.Matrix4();
-    //m.getInverse(m);
+    var invertedMyMatrix = new THREE.Matrix4();
+    m.getInverse(m); //BROKEN
 
     // multiply both to get the point transformed by the matrix
     var warpedPoint = screenPoint.applyMatrix4(m);
