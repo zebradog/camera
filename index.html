@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+
 	<title>Camera</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
@@ -22,87 +23,14 @@
     <script src="js/lib/stats.min.js"></script>
     <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
     
-    <style type="text/css">
-    .hidden{
-      visibility:hidden;
-    }
-
-    #vertex0 {left:0px; top:0px;}
-    #vertex1 {left:640px; top:0px;}
-    #vertex2 {left:640px; top:480px;}
-    #vertex3 {left:0px; top:480px;}
+    <script src="js/webcam.js"></script>
+    <script src="js/homography.js"></script>
+    <script src="js/warp.js"></script>
     
-
-    .vertex {
-      width:50px;
-      height:50px;
-      position:absolute;
-      display:none;
-    }
-
-    #vertexcontainer .vertex {display:block;}
-
-    .vertex div.handle {
-        width:40px;
-        height:40px;
-        position:relative;
-        left:-20px;
-        top:-20px;
-        border:1px solid rgb(0, 100, 200);
-        border-radius:25px;
-        z-index:1;
-        opacity:0.5;
-        background-color: #ddd;
-        color:rgb(0, 100, 200);
-        text-indent:-50px;
-        line-height:5px;
-        font-family:sans-serif;
-        font-size:10px;
-    }
-    .vertex .handle:after{
-      content:' ';
-      height:40px;
-      width:1px;
-      background:rgb(0, 100, 200);
-      position:absolute;
-      left:20px;
-      top:0px;
-      z-index:0;
-    }
-    .vertex .handle:before{
-      content:' ';
-      height:1px;
-      width:40px;
-      background:rgb(0, 100, 200);
-      position:absolute;
-      left:0px;
-      top:20px;
-      z-index:0;
-    }
-
-    .currenthandle {width:40px; height:40px; border:1px solid red; position:absolute; background-color:blue;}
-    body{
-      text-align:center;
-    }
-    #container{
-      height:480px;
-      width:640px;
-      margin:-240px 0 0 -320px;
-      position:absolute;
-      border:1px solid rgba(0, 100, 200,0.5);
-      top:50%;
-      left:50%;
-    }
-    
-     #vertexcontainer, #vertexCanvas, #video, #visualElements{
-      position: absolute;
-      left:0px;
-      top:0px;
-      display:block;
-    }
-    </style>
+     <link href="css/style.css" rel="stylesheet" type="text/css">
     
 </head>
+
 <body>
 
 <video id="video" autoplay width="640" height="480" class="hidden"></video>
@@ -118,33 +46,6 @@
     </div>
   </div>
 </div>
-
-<script>
-navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-window.URL = window.URL || window.webkitURL;
-
-var camvideo = document.getElementById('video');
-
-if (!navigator.getUserMedia)  console.error('navigator.getUserMedia() is not available.');
-else {
-  navigator.getUserMedia({video: true}, gotStream, noStream);
-}
-
-function gotStream(stream) 
-{
-	if (window.URL) camvideo.src = window.URL.createObjectURL(stream);   
-	else  camvideo.src = stream; // Opera
-	camvideo.onerror = function(e) {  stream.stop();  };
-	stream.onended = noStream;
-}
-
-function noStream(e) 
-{
-	var msg = 'No camera available.';
-	if (e.code == 1) msg = 'User denied access to use camera.'; 
-	console.error(msg);
-}
-</script>
 
 <script>
 var SCREEN_HEIGHT = 480;
@@ -167,81 +68,65 @@ animate();
 function init() 
 {
 
-    stats = new Stats();
-    stats.domElement.style.position	= 'absolute';
-    stats.domElement.style.bottom	= '0px';
-    document.body.appendChild( stats.domElement );
-  
-    var gui = new dat.GUI();
-    gui.add(configThreshold, 'threshold',0,1).onChange(function(value) {
-        thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
-    });
-    gui.add(configThreshold, 'soft',0,1).onChange(function(value) {
-        thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
-    });
+  webcam('video');
 
-	scene = new THREE.Scene();
-	
-    camera = new THREE.Camera();
-    scene.add(camera);
-  
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-    renderer.domElement.width = SCREEN_WIDTH;
-    renderer.domElement.height = SCREEN_HEIGHT;
-    renderer.autoClear = false;
-	container = document.getElementById( 'container' );
-    container.insertBefore(renderer.domElement, container.firstChild);
-	
-	video = document.getElementById( 'video' );
-	videoTexture = new THREE.Texture( video );
-	
-	viewThreshold = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
+  stats = new Stats();
+  stats.domElement.style.position	= 'absolute';
+  stats.domElement.style.bottom	= '0px';
+  document.body.appendChild( stats.domElement );
 
-    viewThreshold.material.depthTest = false;
-    viewThreshold.material.depthWrite = false;
-	scene.add(viewThreshold);
-  
-    // postprocessing
-    composer = new THREE.EffectComposer( renderer );
-    composer.addPass( new THREE.RenderPass( scene, camera ) );
+  var gui = new dat.GUI();
+  gui.add(configThreshold, 'threshold',0,1).onChange(function(value) {
+      thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
+  });
+  gui.add(configThreshold, 'soft',0,1).onChange(function(value) {
+      thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
+  });
 
-    thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
-    thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
-    thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
-    composer.addPass( thresholdEffect );
+  scene = new THREE.Scene();
+
+  camera = new THREE.Camera();
+  scene.add(camera);
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  renderer.domElement.width = SCREEN_WIDTH;
+  renderer.domElement.height = SCREEN_HEIGHT;
+  renderer.autoClear = false;
+  container = document.getElementById( 'container' );
+  container.insertBefore(renderer.domElement, container.firstChild);
+
+  video = document.getElementById( 'video' );
+  videoTexture = new THREE.Texture( video );
   
-    perspectiveEffect = new THREE.ShaderPass( THREE.PerspectiveShader );
-    perspectiveEffect.renderToScreen = true;
-    composer.addPass( perspectiveEffect );
+  viewThreshold = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
+
+  viewThreshold.material.depthTest = false;
+  viewThreshold.material.depthWrite = false;
+  scene.add(viewThreshold);
+
+  // postprocessing
+  composer = new THREE.EffectComposer( renderer );
+  composer.addPass( new THREE.RenderPass( scene, camera ) );
+
+  thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
+  thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
+  thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
+  composer.addPass( thresholdEffect );
+
+  perspectiveEffect = new THREE.ShaderPass( THREE.PerspectiveShader );
+  perspectiveEffect.renderToScreen = true;
+  composer.addPass( perspectiveEffect );
   
 }
 
 function animate() 
 {
-    requestAnimationFrame( animate );
+  requestAnimationFrame( animate );
 	if ( video.readyState === video.HAVE_ENOUGH_DATA )
-       videoTexture.needsUpdate = true;
-    composer.render();
-    stats.update();
-}
-
-
-</script>
-
-<script type="text/javascript">
-//http://www.openframeworks.cc/documentation/math/ofVec2f.html#show_getPerpendicular
-THREE.Vector2.prototype.perpendicular = function(){
-    var length = Math.sqrt( this.x*this.x + this.y*this.y );
-	if( length > 0 )
-		return new THREE.Vector2( -(this.y/length), this.x/length );
-	else
-		return new THREE.Vector2();
-}
-
-//http://www.openframeworks.cc/documentation/math/ofVec2f.html#show_getMiddle
-THREE.Vector2.prototype.middle = function(v){
-  return new THREE.Vector2((this.x+v.x)/2.0,(this.y+v.y)/2.0);
+    videoTexture.needsUpdate = true;
+  composer.render();
+  stats.update();
 }
 
 $(function() {
@@ -303,7 +188,7 @@ $(function() {
         context.beginPath();
         first = true;
         for(i = 0; i < 4; i++){
-          polygon[i] = fromWarpToScreenCoord(polygon[i].x,polygon[i].y);
+          polygon[i] = fromWarpToScreenCoord(polygon[i].x,polygon[i].y,myMatrix);
           if (first) {
               context.moveTo(polygon[i].x*SCREEN_WIDTH, polygon[i].y*SCREEN_HEIGHT);
               first = false;
@@ -316,6 +201,8 @@ $(function() {
         context.stroke();
         context.fillStyle="red";
         context.fill();
+  
+        console.log(fromScreenToWarpCoord(0.0,0.0,myMatrix));
 
     };
 
@@ -330,156 +217,9 @@ $(function() {
         drag: updateCrop,
         stop: updateCrop
     });
-
-
-    function findHomography(src, dst){
-      // create the equation system to be solved
-      //
-      // from: Multiple View Geometry in Computer Vision 2ed
-      //       Hartley R. and Zisserman A.
-      //
-      // x' = xH
-      // where H is the homography: a 3 by 3 matrix
-      // that transformed to inhomogeneous coordinates for each point
-      // gives the following equations for each point:
-      //
-      // x' * (h31*x + h32*y + h33) = h11*x + h12*y + h13
-      // y' * (h31*x + h32*y + h33) = h21*x + h22*y + h23
-      //
-      // as the homography is scale independent we can let h33 be 1 (indeed any of the terms)
-      // so for 4 points we have 8 equations for 8 terms to solve: h11 - h32
-      // after ordering the terms it gives the following matrix
-      // that can be solved with gaussian elimination:
-      
-      var points = [ 
-                [-src[0].x, -src[0].y, -1,   0,   0,  0, src[0].x*dst[0].x, src[0].y*dst[0].x, -dst[0].x ], // h11
-                [  0,   0,  0, -src[0].x, -src[0].y, -1, src[0].x*dst[0].y, src[0].y*dst[0].y, -dst[0].y ], // h12
-      
-                [-src[1].x, -src[1].y, -1,   0,   0,  0, src[1].x*dst[1].x, src[1].y*dst[1].x, -dst[1].x ], // h13
-                [  0,   0,  0, -src[1].x, -src[1].y, -1, src[1].x*dst[1].y, src[1].y*dst[1].y, -dst[1].y ], // h21
-      
-                [-src[2].x, -src[2].y, -1,   0,   0,  0, src[2].x*dst[2].x, src[2].y*dst[2].x, -dst[2].x ], // h22
-                [  0,   0,  0, -src[2].x, -src[2].y, -1, src[2].x*dst[2].y, src[2].y*dst[2].y, -dst[2].y ], // h23
-      
-                [-src[3].x, -src[3].y, -1,   0,   0,  0, src[3].x*dst[3].x, src[3].y*dst[3].x, -dst[3].x ], // h31
-                [  0,   0,  0, -src[3].x, -src[3].y, -1, src[3].x*dst[3].y, src[3].y*dst[3].y, -dst[3].y ]  // h32
-      ];
-      
-      var points = gaussianElimination(points, 8);
-      
-      // gaussian elimination gives the results of the equation system
-      // in the last column of the original matrix.
-      // opengl needs the transposed 4x4 matrix:
-      var matrix = [ points[0],points[3],0,points[6], // h11  h21 0 h31
-                     points[1],points[4],0,points[7], // h12  h22 0 h32
-                     0        ,0        ,0,0,         // 0    0   0 0
-                     points[2],points[5],0,1];        // h13  h23 0 h33
-      
-      return matrix;
-    }
-  
-    function gaussianElimination(A, N){
-      // ported to c from pseudocode in
-      // http://en.wikipedia.org/wiki/Gaussian_elimination
-  
-      var i, j, k;
-      
-      for (i = 0; i < N; i++){
-          // find row with maximum in column i
-          var max_row = i;
-          for (j = i; j < N; j++){
-              if (Math.abs(A[j][i]) > Math.abs(A[max_row][i]))
-                  max_row = j;
-          }
-      
-          // swap max row with row i of [A:y]
-          for (k = i; k < N + 1; k++){
-              var tmp       = A[i][k];
-              A[i][k]       = A[max_row][k];
-              A[max_row][k] = tmp;
-          }
-          
-          // eliminate lower diagonal elements of [A]
-          for (j = i + 1; j < N; j++){
-              for (k = N; k > i; k--){
-                  if (A[i][i] == 0.0){
-                      console.log("singular");
-                      return;
-                  }
-                  else
-                      A[j][k] = A[j][k] - A[i][k]*A[j][i]/A[i][i];
-              }
-          }
-      }
-      
-      return substitute(A,N);
-  
-    }
-  
-    function substitute(A,N){
-        var j, k, X = Array();
-
-        for (j = N - 1; j >= 0; j--){
-            var sum = 0.0;
-            for (k = j+1; k < N; k++)
-                sum += A[j][k]*X[k];
-
-            X[j] = (A[j][N] - sum)/A[j][j];
-        }
-        
-        return X;
-    }
-    
-    
-    function fromScreenToWarpCoord(u, v){
-        var screenPoint = new THREE.Vector4(u,v,0,1);
-
-        // i create a ofMatrix4x4 with the ofxGLWarper myMatrixData in column order
-        var myThreejsMatrix = new THREE.Matrix4(myMatrix[0], myMatrix[4],myMatrix[8], myMatrix[12],
-                                                myMatrix[1], myMatrix[5],myMatrix[9], myMatrix[13],
-                                                myMatrix[2], myMatrix[6],myMatrix[10],myMatrix[14],
-                                                myMatrix[3], myMatrix[7],myMatrix[11],myMatrix[15]);
-
-        var invertedMyMatrix = myOFmatrix.getInverse(myThreejsMatrix);	
-
-        // multiply both to get the point transformed by the matrix
-        var warpedPoint = screenPoint.applyMatrix4(invertedMyMatrix);
-
-        // we need to normalize the value as described here : http://tech.groups.yahoo.com/group/OpenCV/message/80121
-        warpedPoint.x = warpedPoint.x / warpedPoint.w;
-        warpedPoint.y = warpedPoint.y / warpedPoint.w;
-        warpedPoint.z = warpedPoint.z / warpedPoint.w;
-
-        return new THREE.Vector2(warpedPoint.x, warpedPoint.y);
-    }
-
-
-    function fromWarpToScreenCoord(x, y){
-        var warpedPoint = new THREE.Vector4(x,y,0,1);
-
-        // Use Three.js to perform matrix multiplcation
-        var myThreejsMatrix = new THREE.Matrix4(myMatrix[0], myMatrix[4],myMatrix[8], myMatrix[12],
-                                                myMatrix[1], myMatrix[5],myMatrix[9], myMatrix[13],
-                                                myMatrix[2], myMatrix[6],myMatrix[10],myMatrix[14],
-                                                myMatrix[3], myMatrix[7],myMatrix[11],myMatrix[15]);
-
-        // multiply both to get the point transformed by the matrix
-        var screenPoint = warpedPoint.applyMatrix4(myThreejsMatrix);
-
-        screenPoint.x = screenPoint.x / screenPoint.w;
-        screenPoint.y = screenPoint.y / screenPoint.w;
-        screenPoint.z = screenPoint.z / screenPoint.w;
-
-        return new THREE.Vector2(screenPoint.x, screenPoint.y);
-    }
-
   
    updateCrop();
 });
-
-
 </script>
-
-
 </body>
 </html>
