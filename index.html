@@ -145,10 +145,10 @@ $(function() {
         ];
         //This is always the original source state
         var screen = [
-          new THREE.Vector2(0,0),
-          new THREE.Vector2(1,0),
+          new THREE.Vector2(0,1),
           new THREE.Vector2(1,1),
-          new THREE.Vector2(0,1)
+          new THREE.Vector2(1,0),
+          new THREE.Vector2(0,0)
         ];
        /* var polygon = [
           new THREE.Vector2(0,0),
@@ -170,7 +170,7 @@ $(function() {
             var x = position.left;
             var y = position.top;
             p[i].x =  x / SCREEN_WIDTH;
-            p[i].y =  y / SCREEN_HEIGHT;
+            p[i].y =  1-(y / SCREEN_HEIGHT);
             if (first) {
                 context.moveTo(x, y);
                 first = false;
