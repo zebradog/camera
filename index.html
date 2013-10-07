@@ -13,7 +13,7 @@
 
     <script src="js/lib/threejs/shaders/CopyShader.js"></script>
     <script src="js/ThresholdShader.js"></script>
-    <script src="js/PerspectiveShader.js"></script>
+    <script src="js/WarpShader.js"></script>
     
     <script src="js/lib/threejs/postprocessing/EffectComposer.js"></script>
     <script src="js/lib/threejs/postprocessing/RenderPass.js"></script>
@@ -59,7 +59,7 @@ var configThreshold = {
 
 var container, scene, camera, renderer, composer, viewThreshold;
 var video, videoTexture;
-var perspectiveEffect, thresholdEffect;
+var warpEffect, thresholdEffect;
 
 
 init();
@@ -114,9 +114,9 @@ function init()
   thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
   composer.addPass( thresholdEffect );
 
-  perspectiveEffect = new THREE.ShaderPass( THREE.PerspectiveShader );
-  perspectiveEffect.renderToScreen = true;
-  composer.addPass( perspectiveEffect );
+  warpEffect = new THREE.ShaderPass( THREE.WarpShader );
+  warpEffect.renderToScreen = true;
+  composer.addPass( warpEffect );
   
 }
 
@@ -183,6 +183,14 @@ $(function() {
         context.fill();
   
         homographyMatrix = findHomography(screen,p);
+        var h = homographyMatrix;
+        //create a ofMatrix4x4 in column order
+        var m = new THREE.Matrix4(h[0], h[4],h[8], h[12],
+                              h[1], h[5],h[9], h[13],
+                              h[2], h[6],h[10],h[14],
+                              h[3], h[7],h[11],h[15]);
+       // m.getInverse(m); //BROKEN
+        warpEffect.uniforms[ 'm' ].value = m;
   
         //warp debug output
         /*context.beginPath();
