@@ -30,7 +30,7 @@
     
 </head>
 
-<body>
+<body class="show-perspective show-fps">
 
 <video id="video" autoplay width="640" height="480" class="hidden"></video>
 
@@ -49,116 +49,126 @@
 <script>
 var SCREEN_HEIGHT = 480;
 var SCREEN_WIDTH = 640;
+var CONFIG_HIDE_DELAY = 10;
 
-var configThreshold = {
+var config = {
   soft: 0.001,
-  threshold: 0.3
+  threshold: 0.3,
+  showPerspective: true,
+  showFPS: true
 };
 
-var scene, camera, renderer, composer, mesh, thresholdEffect, videoTexture;
-var oScene, oCamera, oRenderer, oComposer, oMesh, oThresholdEffect, warpEffect, oVideoTexture; //final output
-var container, video;
-
-init();
-animate();
-		
-function init() 
-{
-
-  webcam('video');
-
-  stats = new Stats();
-  stats.domElement.style.position	= 'absolute';
-  stats.domElement.style.bottom	= '0px';
-  document.body.appendChild( stats.domElement );
-
-  var gui = new dat.GUI();
-  gui.add(configThreshold, 'threshold',0,1).onChange(function(value) {
-      thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
-      oThresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
-  });
-  gui.add(configThreshold, 'soft',0,1).onChange(function(value) {
-      thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
-      oThresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
-  });
-
-  scene = new THREE.Scene();
-  camera = new THREE.Camera();
-  scene.add(camera);
-  
-  oScene = new THREE.Scene();
-  oCamera = new THREE.Camera();
-  oScene.add(oCamera);
-
-  renderer = new THREE.WebGLRenderer();
-  renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-  renderer.domElement.width = SCREEN_WIDTH;
-  renderer.domElement.height = SCREEN_HEIGHT;
-  renderer.domElement.className = renderer.domElement.className + " render input";
-  renderer.autoClear = false;
-  container = document.getElementById( 'container' );
-  container.insertBefore(renderer.domElement, container.firstChild);
-  
-  oRenderer = new THREE.WebGLRenderer();
-  oRenderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-  oRenderer.domElement.width = SCREEN_WIDTH;
-  oRenderer.domElement.height = SCREEN_HEIGHT;
-  oRenderer.domElement.className = oRenderer.domElement.className + " render output";
-  oRenderer.autoClear = false;
-  document.body.insertBefore(oRenderer.domElement, document.body.childNodes[0]);
-
-  video = document.getElementById( 'video' );
-  videoTexture = new THREE.Texture( video );
-  oVideoTexture = new THREE.Texture( video );
-  
-  mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
-  mesh.material.depthTest = false;
-  mesh.material.depthWrite = false;
-  scene.add(mesh);
-  
-  oMesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: oVideoTexture } ) );
-  oMesh.material.depthTest = false;
-  oMesh.material.depthWrite = false;
-  oScene.add(oMesh);
-
-  // postprocessing
-
-  composer = new THREE.EffectComposer( renderer );
-  composer.addPass( new THREE.RenderPass( scene, camera ) );
-  
-  oComposer = new THREE.EffectComposer( oRenderer );
-  oComposer.addPass( new THREE.RenderPass( oScene, oCamera ) );
-  
-  thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
-  thresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
-  thresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
-  thresholdEffect.renderToScreen = true;
-  composer.addPass( thresholdEffect );
-  
-  oThresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
-  oThresholdEffect.uniforms[ 'soft' ].value = configThreshold['soft'];
-  oThresholdEffect.uniforms[ 'threshold' ].value = configThreshold['threshold'];
-  oComposer.addPass( oThresholdEffect );
-
-  warpEffect = new THREE.ShaderPass( THREE.WarpShader );
-  warpEffect.renderToScreen = true;
-  oComposer.addPass( warpEffect );
-  
-}
-
-function animate() 
-{
-  requestAnimationFrame( animate );
-	if ( video.readyState === video.HAVE_ENOUGH_DATA ){
-    videoTexture.needsUpdate = true;
-    oVideoTexture.needsUpdate = true;
-  }
-  composer.render();
-  oComposer.render();
-  stats.update();
-}
-
 $(function() {
+
+    init();
+    animate();
+  
+    var scene, camera, renderer, composer, mesh, thresholdEffect, videoTexture;
+    var oScene, oCamera, oRenderer, oMesh, warpEffect, oVideoTexture; //final output
+    var container, video;
+        
+    function init() 
+    {
+
+      webcam('video');
+
+      stats = new Stats();
+      document.body.appendChild( stats.domElement );
+
+      var gui = new dat.GUI();
+      gui.add(config, 'threshold',0,1).onChange(function(value) {
+          thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
+      });
+      gui.add(config, 'soft',0,1).onChange(function(value) {
+          thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
+      });
+      gui.add(config, 'showPerspective').onChange(function(value) {
+         if(value) $('body').addClass("show-perspective");
+         else $('body').removeClass("show-perspective");
+      });
+      gui.add(config, 'showFPS').onChange(function(value) {
+         if(value) $('body').addClass("show-fps");
+         else $('body').removeClass("show-fps");
+      });
+      //uncomment to enable config auto-hide
+      /*var timeoutConfig = setTimeout(hideConfig,CONFIG_HIDE_DELAY*1000);
+      jQuery('.dg').mouseover(function(e){ clearTimeout(timeoutConfig); });*/
+      jQuery(".dg .close-button").click(hideConfig);
+      function hideConfig(){
+        $('body').removeClass("show-perspective");
+        config['showPerspective'] = false;
+        $('body').removeClass("show-fps");
+        config['showFPS'] = false;
+        jQuery(gui.domElement).remove();
+      }
+
+      scene = new THREE.Scene();
+      camera = new THREE.Camera();
+      scene.add(camera);
+      
+      oScene = new THREE.Scene();
+      oCamera = new THREE.Camera();
+      oScene.add(oCamera);
+
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+      renderer.domElement.width = SCREEN_WIDTH;
+      renderer.domElement.height = SCREEN_HEIGHT;
+      renderer.domElement.className = renderer.domElement.className + " render input";
+      renderer.autoClear = false;
+      container = document.getElementById( 'container' );
+      container.insertBefore(renderer.domElement, container.firstChild);
+      
+      oRenderer = new THREE.WebGLRenderer();
+      oRenderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+      oRenderer.domElement.width = SCREEN_WIDTH;
+      oRenderer.domElement.height = SCREEN_HEIGHT;
+      oRenderer.domElement.className = oRenderer.domElement.className + " render output";
+      oRenderer.autoClear = false;
+      document.body.insertBefore(oRenderer.domElement, document.body.childNodes[0]);
+
+      video = document.getElementById( 'video' );
+      videoTexture = new THREE.Texture( video );
+      oVideoTexture = new THREE.Texture( video );
+      
+      mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
+      mesh.material.depthTest = false;
+      mesh.material.depthWrite = false;
+      scene.add(mesh);
+      
+      oMesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: oVideoTexture } ) );
+      oMesh.material.depthTest = false;
+      oMesh.material.depthWrite = false;
+      oScene.add(oMesh);
+
+      // postprocessing
+
+      composer = new THREE.EffectComposer( oRenderer );
+      composer.addPass( new THREE.RenderPass( oScene, oCamera ) );
+      
+      thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
+      thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
+      thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
+      composer.addPass( thresholdEffect );
+
+      warpEffect = new THREE.ShaderPass( THREE.WarpShader );
+      warpEffect.renderToScreen = true;
+      composer.addPass( warpEffect );
+      
+    }
+
+    function animate() 
+    {
+      requestAnimationFrame( animate );
+      if ( video.readyState === video.HAVE_ENOUGH_DATA ){
+        if(config['showPerspective']) videoTexture.needsUpdate = true;
+        oVideoTexture.needsUpdate = true;
+      }
+      if(config['showPerspective']) renderer.render( scene, camera );
+      composer.render();
+      if(config['showFPS']) stats.update();
+    }
+
 
     updateCrop = function() {
   

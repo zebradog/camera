@@ -2,6 +2,18 @@
   visibility:hidden;
 }
 
+#stats{
+  position:absolute;
+  bottom:0;
+  left:0;
+  visibility:hidden;
+  display:none;
+}
+.show-fps #stats{
+  display:block;
+  visibility:visible;
+}
+
 #vertex0 {left:0px; top:0px;}
 #vertex1 {left:640px; top:0px;}
 #vertex2 {left:640px; top:480px;}
@@ -67,6 +79,12 @@ body{
   border:1px solid rgba(0, 100, 200,0.5);
   top:50%;
   left:50%;
+  display:none;
+  visibility:hidden;
+}
+.show-perspective #container{
+  display:block;
+  visibility:visible;
 }
 
  #vertexcontainer, #vertexCanvas, #video, #visualElements{
@@ -82,5 +100,8 @@ body{
   left:0;
   height:100%;
   width:100%;
-  opacity:0.5;
+}
+
+.show-perspective .render.output{
+    opacity:0.5;
 }
