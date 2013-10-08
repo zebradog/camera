@@ -205,12 +205,12 @@ $(function() {
         context.stroke();
         context.fill();
   
-        var h = findHomography(screen,p);
+        var m = getPerspective(screen,p);
         //create a ofMatrix4x4 in column order
-        var m = new THREE.Matrix4(h[0], h[4],h[8], h[12],
-                              h[1], h[5],h[9], h[13],
-                              h[2], h[6],h[10],h[14],
-                              h[3], h[7],h[11],h[15]);
+        m = new THREE.Matrix4(m[0], m[4],m[8], m[12],
+                              m[1], m[5],m[9], m[13],
+                              m[2], m[6],m[10],m[14],
+                              m[3], m[7],m[11],m[15]);
   
         warpEffect.uniforms[ 'm' ].value = m;
 

@@ -2,7 +2,7 @@
  * @author Kyle Stangel, ZEBRADOG / kyle@zebradog.com
  */
 
-function findHomography(src, dst){
+function getPerspective(src, dst){
   // create the equation system to be solved
   //
   // from: Multiple View Geometry in Computer Vision 2ed
