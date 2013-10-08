@@ -75,3 +75,12 @@ body{
   top:0px;
   display:block;
 }
+
+.render.output{
+  position:absolute;
+  top:0;
+  left:0;
+  height:100%;
+  width:100%;
+  opacity:0.5;
+}
