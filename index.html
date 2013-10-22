@@ -33,7 +33,7 @@
 <body class="show-perspective show-fps">
 
 <div id="container">
-  <video id="video" autoplay width="640" height="480" class="hidden"></video>
+  <video id="video" autoplay width="640" height="480"></video>
   <div id="crop">
     <canvas id="vertexCanvas" width="640" height="480"></canvas>
     <div id="vertexcontainer">
@@ -63,8 +63,7 @@ $(function() {
     init();
     animate();
   
-    var scene, camera, renderer, composer, mesh, thresholdEffect, videoTexture;
-    var oScene, oCamera, oRenderer, oMesh, warpEffect, oVideoTexture; //final output
+    var scene, camera, renderer, mesh, warpEffect, videoTexture;
     var container, video;
         
     function init() 
@@ -123,45 +122,27 @@ $(function() {
       camera = new THREE.Camera();
       scene.add(camera);
       
-      oScene = new THREE.Scene();
-      oCamera = new THREE.Camera();
-      oScene.add(oCamera);
-
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
       renderer.domElement.width = SCREEN_WIDTH;
       renderer.domElement.height = SCREEN_HEIGHT;
-      renderer.domElement.className = renderer.domElement.className + " render input";
+      renderer.domElement.className = renderer.domElement.className + " render output";
       renderer.autoClear = false;
-      container = document.getElementById( 'container' );
-      container.insertBefore(renderer.domElement, container.firstChild);
-      
-      oRenderer = new THREE.WebGLRenderer();
-      oRenderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-      oRenderer.domElement.width = SCREEN_WIDTH;
-      oRenderer.domElement.height = SCREEN_HEIGHT;
-      oRenderer.domElement.className = oRenderer.domElement.className + " render output";
-      oRenderer.autoClear = false;
-      document.body.insertBefore(oRenderer.domElement, document.body.childNodes[0]);
+      document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
 
       video = document.getElementById( 'video' );
       videoTexture = new THREE.Texture( video );
-      oVideoTexture = new THREE.Texture( video );
+      videoTexture = new THREE.Texture( video );
+  
       
       mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
       mesh.material.depthTest = false;
       mesh.material.depthWrite = false;
       scene.add(mesh);
-      
-      oMesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: oVideoTexture } ) );
-      oMesh.material.depthTest = false;
-      oMesh.material.depthWrite = false;
-      oScene.add(oMesh);
 
       // postprocessing
-
-      composer = new THREE.EffectComposer( oRenderer );
-      composer.addPass( new THREE.RenderPass( oScene, oCamera ) );
+      composer = new THREE.EffectComposer( renderer );
+      composer.addPass( new THREE.RenderPass( scene, camera ) );
       
       thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
       thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
@@ -178,10 +159,8 @@ $(function() {
     {
       requestAnimationFrame( animate );
       if ( video.readyState === video.HAVE_ENOUGH_DATA ){
-        if(config['showPerspective']) videoTexture.needsUpdate = true;
-        oVideoTexture.needsUpdate = true;
+        videoTexture.needsUpdate = true;
       }
-      if(config['showPerspective']) renderer.render( scene, camera );
       composer.render();
       if(config['showFPS']) stats.update();
     }
