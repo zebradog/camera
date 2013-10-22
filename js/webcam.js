@@ -5,15 +5,32 @@
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 window.URL = window.URL || window.webkitURL;
 
+var webcam = {};
+
+webcam.sources = [];
+
+webcam.updateSources = function(callback){
+  webcam.sources = [];
+  MediaStreamTrack.getSources(function(s){
+    for(var i = 0; i < s.length; i++){
+      if(s[i].kind == 'video')
+        webcam.sources.push(s[i].id);
+    }
+    callback(webcam.sources);
+  });
+};
+
 /* use a <video> element to display webcam input
 id = id attribute of video element
+sid = optional source id to specify webcam
 */
-function webcam(id){
+webcam.start = function(id,sid){
   var camvideo = document.getElementById(id);
 
   if (!navigator.getUserMedia)  console.error('navigator.getUserMedia() is not available.');
   else {
-    navigator.getUserMedia({video: true}, gotStream, noStream);
+    if(sid) navigator.getUserMedia({video: {optional: [{sourceId: sid}]}}, gotStream, noStream);
+    else navigator.getUserMedia({video: true}, gotStream, noStream);
   }
 
   function gotStream(stream) 

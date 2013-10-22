@@ -55,7 +55,8 @@ var config = {
   soft: 0.001,
   threshold: 0.3,
   showPerspective: true,
-  showFPS: true
+  showFPS: true,
+  camera: ''
 };
 
 $(function() {
@@ -70,7 +71,7 @@ $(function() {
     function init() 
     {
 
-      webcam('video');
+      webcam.start('video');
 
       stats = new Stats();
       document.body.appendChild( stats.domElement );
@@ -90,6 +91,23 @@ $(function() {
          if(value) $('body').addClass("show-fps");
          else $('body').removeClass("show-fps");
       });
+      webcam.updateSources(function(s){
+        var label = [];
+        var camera = {};
+        if(s.length > 1)
+          //if there's more than one, not sure which one is running
+          //likely always camera with highest index
+          label.push('');
+        for(var i = 0; i < s.length; i++){
+          var title = "Camera "+i;
+          label.push(title);
+          camera[title] = s[i];
+        }
+        gui.add(config,'camera',label).onChange(function(value){
+          webcam.start('video',camera[value]);
+        });
+      });
+
       //uncomment to enable config auto-hide
       /*var timeoutConfig = setTimeout(hideConfig,CONFIG_HIDE_DELAY*1000);
       jQuery('.dg').mouseover(function(e){ clearTimeout(timeoutConfig); });*/
