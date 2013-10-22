@@ -32,9 +32,8 @@
 
 <body class="show-perspective show-fps">
 
-<video id="video" autoplay width="640" height="480" class="hidden"></video>
-
 <div id="container">
+  <video id="video" autoplay width="640" height="480" class="hidden"></video>
   <div id="crop">
     <canvas id="vertexCanvas" width="640" height="480"></canvas>
     <div id="vertexcontainer">
@@ -246,7 +245,7 @@ $(function() {
 
     $( ".vertex" ).draggable({
         stack: "div",
-        snap: true,
+        snap: false,
         handle: "div.handle",
         start: function() {
             $(".currenthandle").removeClass("currenthandle");
@@ -255,6 +254,7 @@ $(function() {
         drag: updateCrop,
         stop: updateCrop
     });
+    $("#container").draggable();
   
    updateCrop();
 });
