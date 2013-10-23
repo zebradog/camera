@@ -64,7 +64,7 @@ $(function() {
     init();
     animate();
   
-    var scene, camera, renderer, mesh, warpEffect, video, videoTexture;
+    var scene, camera, renderer, video, videoTexture, uniforms;
         
     function init(){
 
@@ -73,6 +73,7 @@ $(function() {
   
       video = new Array();
       videoTexture = new Array();
+      uniforms = new Array();
 
       var gui = new dat.GUI();
       gui.add(config, 'threshold',0,1).onChange(function(value) {
@@ -118,6 +119,7 @@ $(function() {
       composer.addPass( new THREE.RenderPass( scene, camera ) );
       
       thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
+      thresholdEffect.renderToScreen = true;
       thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
       thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
       composer.addPass( thresholdEffect );
@@ -125,13 +127,13 @@ $(function() {
       /*warpEffect = new THREE.ShaderPass( THREE.WarpShader );
       warpEffect.renderToScreen = true;
       composer.addPass( warpEffect );*/
-      thresholdEffect.renderToScreen = true;
   
       webcam.updateSources(function(s){
         for(var i = 0; i < s.length; i++){
             var containerID = "camera"+i;
             var videoID = "input"+i;
-            var $container = $('#camera0')
+            var $container = $('#camera0');
+        
             //if more than one camera: clone.
             if(i > 0){
               $container.clone().attr('id',containerID).appendTo('body');
@@ -145,8 +147,16 @@ $(function() {
             var geometry = new THREE.PlaneGeometry( 2/s.length, 2);
             video[i] = document.getElementById(videoID);
             videoTexture[i] = new THREE.Texture(video[i]);
-            
-            mesh = new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({map:videoTexture[i]}));
+            uniforms[i] = {
+              tDiffuse: { type: "t", value: videoTexture[i] },
+              m:        { type: "m4", value: new THREE.Matrix4() }
+            }
+            var material = new THREE.ShaderMaterial({
+              uniforms: uniforms[i],
+              vertexShader: THREE.WarpShader.vertexShader,
+              fragmentShader: THREE.WarpShader.fragmentShader
+            })
+            var mesh = new THREE.Mesh(geometry,material);
             mesh.position.x = -0.5+(i/s.length)*2;
             mesh.material.depthTest = false;
             mesh.material.depthWrite = false;
@@ -169,6 +179,7 @@ $(function() {
                 },
                 drag: function(){
                   var $container = $(this).parents('.camera');
+                  var cameraIndex = parseInt($container.attr('id').replace('camera',''));
                   var canvas = $(".vertexCanvas",$container).get(0);
                   var context = canvas.getContext("2d");
                   
@@ -214,12 +225,12 @@ $(function() {
             
                   var m = getPerspective(screen,p);
                   //create a ofMatrix4x4 in column order
-                  m = new THREE.Matrix4(m[0], m[4],m[8], m[12],
+                  uniforms[cameraIndex]['m'].value = new THREE.Matrix4(
+                                        m[0], m[4],m[8], m[12],
                                         m[1], m[5],m[9], m[13],
                                         m[2], m[6],m[10],m[14],
                                         m[3], m[7],m[11],m[15]);
             
-                  //warpEffect.uniforms[ 'm' ].value = m;
 
               } //end drag handler
           }); //end vertices
