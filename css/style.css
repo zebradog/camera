@@ -71,7 +71,7 @@
 body{
   text-align:center;
 }
-#container{
+.camera{
   height:480px;
   width:640px;
   margin:-240px 0 0 -320px;
@@ -82,12 +82,12 @@ body{
   display:none;
   visibility:hidden;
 }
-.show-perspective #container{
+.show-perspective .camera{
   display:block;
   visibility:visible;
 }
 
- #vertexcontainer, #vertexCanvas, #video, #visualElements{
+ #vertexcontainer, #vertexCanvas, video.webcam, #visualElements{
   position: absolute;
   left:0px;
   top:0px;

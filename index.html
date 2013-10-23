@@ -32,8 +32,8 @@
 
 <body class="show-perspective show-fps">
 
-<div id="container">
-  <video id="video" autoplay width="640" height="480"></video>
+<div id="camera0" class="camera">
+  <video id="input0" autoplay width="640" height="480" class="webcam"></video>
   <div id="crop">
     <canvas id="vertexCanvas" width="640" height="480"></canvas>
     <div id="vertexcontainer">
@@ -63,13 +63,11 @@ $(function() {
     init();
     animate();
   
+  
     var scene, camera, renderer, mesh, warpEffect, videoTexture;
     var container, video;
         
-    function init() 
-    {
-
-      webcam.start('video');
+    function init(){
 
       stats = new Stats();
       document.body.appendChild( stats.domElement );
@@ -92,17 +90,14 @@ $(function() {
       webcam.updateSources(function(s){
         var label = [];
         var camera = {};
-        if(s.length > 1)
-          //if there's more than one, not sure which one is running
-          //likely always camera with highest index
-          label.push('');
         for(var i = 0; i < s.length; i++){
           var title = "Camera "+i;
           label.push(title);
           camera[title] = s[i];
         }
+        webcam.start('input0',s[0]); //start first camera in list
         gui.add(config,'camera',label).onChange(function(value){
-          webcam.start('video',camera[value]);
+          webcam.start('input0',camera[value]);
         });
       });
 
@@ -130,7 +125,7 @@ $(function() {
       renderer.autoClear = false;
       document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
 
-      video = document.getElementById( 'video' );
+      video = document.getElementById( 'input0' );
       videoTexture = new THREE.Texture( video );
       videoTexture = new THREE.Texture( video );
   
@@ -233,7 +228,7 @@ $(function() {
         drag: updateCrop,
         stop: updateCrop
     });
-    $("#container").draggable();
+    $("#camera0").draggable();
   
    updateCrop();
 });
