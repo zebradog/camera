@@ -130,9 +130,7 @@ $(function() {
 
       video = document.getElementById( 'input0' );
       videoTexture = new THREE.Texture( video );
-      videoTexture = new THREE.Texture( video );
   
-      
       mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
       mesh.material.depthTest = false;
       mesh.material.depthWrite = false;
