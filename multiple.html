@@ -88,20 +88,95 @@ $(function() {
          if(value) $('body').addClass("show-fps");
          else $('body').removeClass("show-fps");
       });
+  
       webcam.updateSources(function(s){
-        var label = [];
-        var camera = {};
         for(var i = 0; i < s.length; i++){
-          var title = "Camera "+i;
-          label.push(title);
-          camera[title] = s[i];
+            var containerID = "camera"+i;
+            var videoID = "input"+i;
+            var $container = $('#camera0')
+            //if more than one camera: clone.
+            if(i > 0){
+              $container.clone().attr('id',containerID).appendTo('body');
+              $container = $('#'+containerID);
+              $container.animate({marginLeft: '+=40px',marginTop: '+=40px'}, 0);
+              $container.children('.webcam').attr('id',videoID);
+            }
+
+            webcam.start(videoID,s[i]);
+            
+            $container.children('.label').text('camera '+i);
+            
+            $container.draggable().on('mousedown', function(event) {
+              $('.camera').css('z-index','1000');
+              $(this).css('z-index','1001');
+            });
+            
+            $(".vertex",$container).draggable({
+                stack: "div",
+                snap: false,
+                handle: "div.handle",
+                start: function() {
+                    $(".currenthandle",$container).removeClass("currenthandle");
+                    $(this).children("div.handle").addClass("currenthandle");
+                },
+                drag: function(){
+                  var $container = $(this).parents('.camera');
+                  var canvas = $(".vertexCanvas",$container).get(0);
+                  var context = canvas.getContext("2d");
+                  
+                  //vertices of crop box
+                  var p = [
+                    new THREE.Vector2(),
+                    new THREE.Vector2(),
+                    new THREE.Vector2(),
+                    new THREE.Vector2()
+                  ];
+                  //This is always the original source state
+                  var screen = [
+                    new THREE.Vector2(0,1),
+                    new THREE.Vector2(1,1),
+                    new THREE.Vector2(1,0),
+                    new THREE.Vector2(0,0)
+                  ];
+                  context.strokeStyle = "rgba(0, 100, 200,0.5)";
+                  context.fillStyle = "rgba(0, 100, 200,0.15)";
+                  context.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
+            
+                  //calculate and display the crop box and vertices
+                  context.beginPath();
+                  var first = true;
+
+                  $(".vertexcontainer .vertex",$container).each(function() {
+                      var position = $(this).position();
+                      var i = $(this).attr('data-vertexnumber');
+                      var x = position.left;
+                      var y = position.top;
+                      p[i].x =  x / SCREEN_WIDTH;
+                      p[i].y =  1-(y / SCREEN_HEIGHT);
+                      if (first) {
+                          context.moveTo(x, y);
+                          first = false;
+                      } else {
+                          context.lineTo(x, y);
+                      }
+                  });
+                  context.closePath();
+                  context.stroke();
+                  context.fill();
+            
+                  var m = getPerspective(screen,p);
+                  //create a ofMatrix4x4 in column order
+                  m = new THREE.Matrix4(m[0], m[4],m[8], m[12],
+                                        m[1], m[5],m[9], m[13],
+                                        m[2], m[6],m[10],m[14],
+                                        m[3], m[7],m[11],m[15]);
+            
+                  //warpEffect.uniforms[ 'm' ].value = m;
+
+              }
+          });
+
         }
-        webcam.start('input0',s[0]); //start first camera in list
-        $('#camera0 .label').text(label[0]);
-        gui.add(config,'camera',label).onChange(function(value){
-          webcam.start('input0',camera[value]);
-          $('#camera0 .label').text(value);
-        });
       });
 
       //uncomment to enable config auto-hide
@@ -147,9 +222,10 @@ $(function() {
       thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
       composer.addPass( thresholdEffect );
 
-      warpEffect = new THREE.ShaderPass( THREE.WarpShader );
+      /*warpEffect = new THREE.ShaderPass( THREE.WarpShader );
       warpEffect.renderToScreen = true;
-      composer.addPass( warpEffect );
+      composer.addPass( warpEffect );*/
+      thresholdEffect.renderToScreen = true;
       
     }
 
@@ -163,76 +239,6 @@ $(function() {
       if(config['showFPS']) stats.update();
     }
 
-
-    updateCrop = function() {
-  
-        var canvas = $('#camera0 .vertexCanvas').get(0);
-        var context = canvas.getContext("2d");
-        
-        //vertices of crop box
-        var p = [
-          new THREE.Vector2(),
-          new THREE.Vector2(),
-          new THREE.Vector2(),
-          new THREE.Vector2()
-        ];
-        //This is always the original source state
-        var screen = [
-          new THREE.Vector2(0,1),
-          new THREE.Vector2(1,1),
-          new THREE.Vector2(1,0),
-          new THREE.Vector2(0,0)
-        ];
-        context.strokeStyle = "rgba(0, 100, 200,0.5)";
-        context.fillStyle = "rgba(0, 100, 200,0.15)";
-        context.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
-  
-        //calculate and display the crop box and vertices
-        context.beginPath();
-        var first = true;
-
-        $("#camera0 .vertexcontainer .vertex").each(function() {
-            var position = $(this).position();
-            var i = $(this).attr('data-vertexnumber');
-            var x = position.left;
-            var y = position.top;
-            p[i].x =  x / SCREEN_WIDTH;
-            p[i].y =  1-(y / SCREEN_HEIGHT);
-            if (first) {
-                context.moveTo(x, y);
-                first = false;
-            } else {
-                context.lineTo(x, y);
-            }
-        });
-        context.closePath();
-        context.stroke();
-        context.fill();
-  
-        var m = getPerspective(screen,p);
-        //create a ofMatrix4x4 in column order
-        m = new THREE.Matrix4(m[0], m[4],m[8], m[12],
-                              m[1], m[5],m[9], m[13],
-                              m[2], m[6],m[10],m[14],
-                              m[3], m[7],m[11],m[15]);
-  
-        warpEffect.uniforms[ 'm' ].value = m;
-
-    };
-
-    $( ".vertex" ).draggable({
-        stack: "div",
-        snap: false,
-        handle: "div.handle",
-        start: function() {
-            $(".currenthandle").removeClass("currenthandle");
-            $(this).children("div.handle").addClass("currenthandle");
-        },
-        drag: updateCrop
-    });
-    $("#camera0").draggable();
-  
-   updateCrop();
 });
 </script>
 </body>

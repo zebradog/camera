@@ -14,10 +14,10 @@
   visibility:visible;
 }
 
-#vertex0 {left:0px; top:0px;}
-#vertex1 {left:640px; top:0px;}
-#vertex2 {left:640px; top:480px;}
-#vertex3 {left:0px; top:480px;}
+.vertex:nth-child(0){left:0px; top:0px;}
+.vertex:nth-child(1) {left:640px; top:0px;}
+.vertex:nth-child(2) {left:640px; top:480px;}
+.vertex:nth-child(3) {left:0px; top:480px;}
 
 
 .vertex {
@@ -27,7 +27,18 @@
   display:none;
 }
 
-#vertexcontainer .vertex {display:block;}
+.camera{
+    color:rgb(0, 100, 200);
+    font-family:sans-serif;
+    font-size:10px;
+    text-transform:lowercase;
+}
+
+.camera .label{
+  margin-top:-1.5em;
+}
+
+.vertexcontainer .vertex {display:block;}
 
 .vertex div.handle {
     width:40px;
@@ -40,11 +51,8 @@
     z-index:1;
     opacity:0.5;
     background-color: #ddd;
-    color:rgb(0, 100, 200);
     text-indent:-50px;
     line-height:5px;
-    font-family:sans-serif;
-    font-size:10px;
 }
 .vertex .handle:after{
   content:' ';
@@ -82,12 +90,12 @@ body{
   display:none;
   visibility:hidden;
 }
-.show-perspective .camera{
+.show-camera .camera{
   display:block;
   visibility:visible;
 }
 
- #vertexcontainer, #vertexCanvas, video.webcam, #visualElements{
+ .vertexcontainer, .vertexCanvas, video.webcam, #visualElements{
   position: absolute;
   left:0px;
   top:0px;
@@ -102,6 +110,6 @@ body{
   width:100%;
 }
 
-.show-perspective .render.output{
+.show-camera .render.output{
     opacity:0.5;
 }
