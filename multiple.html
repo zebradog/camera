@@ -32,6 +32,11 @@
 
 <body class="show-camera show-fps">
 
+<div id="menu">
+  <a href="index.html">single camera</a>
+  <strong>multiple cameras</strong>
+</div>
+
 <div id="camera0" class="camera">
   <div class="label">Camera #</div>
   <video id="input0" autoplay width="640" height="480" class="webcam"></video>
@@ -99,6 +104,7 @@ $(function() {
         config['showCamera'] = false;
         $('body').removeClass("show-fps");
         config['showFPS'] = false;
+        $('#menu').addClass('hidden');
         jQuery(gui.domElement).remove();
       }
   

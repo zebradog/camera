@@ -1,3 +1,17 @@
+body{
+    font-family:sans-serif;
+    font-size:10px;
+}
+
+.camera, a{
+    color:rgb(0, 100, 200);
+}
+
+#menu{
+  position:absolute;
+  z-index:10;
+}
+
 .hidden{
   visibility:hidden;
 }
@@ -28,10 +42,8 @@
 }
 
 .camera{
-    color:rgb(0, 100, 200);
-    font-family:sans-serif;
-    font-size:10px;
-    text-transform:lowercase;
+  font-size:10px;
+  text-transform:lowercase;
 }
 
 .camera .label{
