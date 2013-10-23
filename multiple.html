@@ -64,14 +64,15 @@ $(function() {
     init();
     animate();
   
-  
-    var scene, camera, renderer, mesh, warpEffect, videoTexture;
-    var container, video;
+    var scene, camera, renderer, mesh, warpEffect, video, videoTexture;
         
     function init(){
 
       stats = new Stats();
       document.body.appendChild( stats.domElement );
+  
+      video = new Array();
+      videoTexture = new Array();
 
       var gui = new dat.GUI();
       gui.add(config, 'threshold',0,1).onChange(function(value) {
@@ -88,6 +89,43 @@ $(function() {
          if(value) $('body').addClass("show-fps");
          else $('body').removeClass("show-fps");
       });
+      //uncomment to enable config auto-hide
+      /*var timeoutConfig = setTimeout(hideConfig,CONFIG_HIDE_DELAY*1000);
+      jQuery('.dg').mouseover(function(e){ clearTimeout(timeoutConfig); });*/
+      jQuery(".dg .close-button").click(hideConfig);
+      function hideConfig(){
+        $('body').removeClass("show-camera");
+        config['showCamera'] = false;
+        $('body').removeClass("show-fps");
+        config['showFPS'] = false;
+        jQuery(gui.domElement).remove();
+      }
+  
+      scene = new THREE.Scene();
+      camera = new THREE.Camera();
+      scene.add(camera);
+      
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+      renderer.domElement.width = SCREEN_WIDTH;
+      renderer.domElement.height = SCREEN_HEIGHT;
+      renderer.domElement.className = renderer.domElement.className + " render output";
+      renderer.autoClear = false;
+      document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
+  
+      // postprocessing
+      composer = new THREE.EffectComposer( renderer );
+      composer.addPass( new THREE.RenderPass( scene, camera ) );
+      
+      thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
+      thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
+      thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
+      composer.addPass( thresholdEffect );
+
+      /*warpEffect = new THREE.ShaderPass( THREE.WarpShader );
+      warpEffect.renderToScreen = true;
+      composer.addPass( warpEffect );*/
+      thresholdEffect.renderToScreen = true;
   
       webcam.updateSources(function(s){
         for(var i = 0; i < s.length; i++){
@@ -103,6 +141,16 @@ $(function() {
             }
 
             webcam.start(videoID,s[i]);
+            
+            var geometry = new THREE.PlaneGeometry( 2/s.length, 2);
+            video[i] = document.getElementById(videoID);
+            videoTexture[i] = new THREE.Texture(video[i]);
+            
+            mesh = new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({map:videoTexture[i]}));
+            mesh.position.x = -0.5+(i/s.length)*2;
+            mesh.material.depthTest = false;
+            mesh.material.depthWrite = false;
+            scene.add(mesh);
             
             $container.children('.label').text('camera '+i);
             
@@ -173,67 +221,21 @@ $(function() {
             
                   //warpEffect.uniforms[ 'm' ].value = m;
 
-              }
-          });
-
-        }
-      });
-
-      //uncomment to enable config auto-hide
-      /*var timeoutConfig = setTimeout(hideConfig,CONFIG_HIDE_DELAY*1000);
-      jQuery('.dg').mouseover(function(e){ clearTimeout(timeoutConfig); });*/
-      jQuery(".dg .close-button").click(hideConfig);
-      function hideConfig(){
-        $('body').removeClass("show-camera");
-        config['showCamera'] = false;
-        $('body').removeClass("show-fps");
-        config['showFPS'] = false;
-        jQuery(gui.domElement).remove();
-      }
-
-      scene = new THREE.Scene();
-      camera = new THREE.Camera();
-      scene.add(camera);
-      
-      renderer = new THREE.WebGLRenderer();
-      renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-      renderer.domElement.width = SCREEN_WIDTH;
-      renderer.domElement.height = SCREEN_HEIGHT;
-      renderer.domElement.className = renderer.domElement.className + " render output";
-      renderer.autoClear = false;
-      document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
-
-      video = document.getElementById( 'input0' );
-      videoTexture = new THREE.Texture( video );
-      videoTexture = new THREE.Texture( video );
-  
-      
-      mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
-      mesh.material.depthTest = false;
-      mesh.material.depthWrite = false;
-      scene.add(mesh);
-
-      // postprocessing
-      composer = new THREE.EffectComposer( renderer );
-      composer.addPass( new THREE.RenderPass( scene, camera ) );
-      
-      thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
-      thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
-      thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
-      composer.addPass( thresholdEffect );
-
-      /*warpEffect = new THREE.ShaderPass( THREE.WarpShader );
-      warpEffect.renderToScreen = true;
-      composer.addPass( warpEffect );*/
-      thresholdEffect.renderToScreen = true;
-      
+              } //end drag handler
+          }); //end vertices
+          
+        } //end loop over video sources
+        
+      }); //end on update video sources
     }
-
+  
     function animate() 
     {
       requestAnimationFrame( animate );
-      if ( video.readyState === video.HAVE_ENOUGH_DATA ){
-        videoTexture.needsUpdate = true;
+      for(var i = 0; i < video.length; i++ ){
+        if ( video[i].readyState === video[i].HAVE_ENOUGH_DATA ){
+            videoTexture[i].needsUpdate = true;
+        }
       }
       composer.render();
       if(config['showFPS']) stats.update();
