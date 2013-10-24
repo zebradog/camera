@@ -9,7 +9,7 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
      <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
     
-    <script src="js/lib/threejs/three.min.js"></script>
+    <script src="js/lib/three.min.js"></script>
 
     <script src="js/shaders/threshold.js"></script>
     
@@ -44,7 +44,7 @@ var SCREEN_WIDTH = 640;
 var CONFIG_HIDE_DELAY = 10;
 
 var config = {
-  soft: 0.0,
+  soft: 0.001,
   threshold: 0.3,
   showCamera: true,
   showFPS: true,
@@ -125,7 +125,7 @@ $(function() {
       uniforms = {
         tDiffuse:   { type: "t", value: videoTexture },
         soft:       { type: "f", value: 0.001 },
-        threshold:  { type: "f", value: 0.3 },
+        threshold:  { type: "f", value: 0.3 }
       }
       var geometry = new THREE.PlaneGeometry( 2, 2);
       var material = new THREE.ShaderMaterial({

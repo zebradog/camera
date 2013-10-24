@@ -9,7 +9,7 @@ THREE.ThresholdShader = {
 
 	uniforms: {
 		"tDiffuse": { type: "t", value: null },
-        "soft":    { type: "f", value: 0.001 },
+    "soft":    { type: "f", value: 0.001 },
 		"threshold":    { type: "f", value: 0.3 },
 	},
 
@@ -19,7 +19,6 @@ THREE.ThresholdShader = {
 	"void main() {",
 		"vUv = uv;",
 		"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
-
 	"}"
 
 	].join("\n"),
@@ -27,8 +26,8 @@ THREE.ThresholdShader = {
 	fragmentShader: [
 
 	"uniform sampler2D tDiffuse;",
-    "uniform float soft;",
-    "uniform float threshold;",
+  "uniform float soft;",
+  "uniform float threshold;",
     
 	"varying vec2 vUv;",
 

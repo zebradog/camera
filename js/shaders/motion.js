@@ -14,7 +14,6 @@ THREE.MotionShader = {
 	"void main() {",
 		"vUv = uv;",
 		"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
-
 	"}"
 
 	].join("\n"),
@@ -29,7 +28,7 @@ THREE.MotionShader = {
 	"void main() {",
         "vec4 c = texture2D(tDiffuse, vUv);",
         "vec4 p = texture2D(tPrevious, vUv);",
-        "gl_FragColor= vec4(c.x-p.x,c.y-p.y,c.z-p.z,1.0);",
+        "gl_FragColor = vec4(c.x-p.x,c.y-p.y,c.z-p.z,1.0);",
 	"}"
 
 	].join("\n")

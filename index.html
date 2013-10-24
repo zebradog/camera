@@ -9,16 +9,9 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
      <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
     
-    <script src="js/lib/threejs/three.min.js"></script>
+    <script src="js/lib/three.min.js"></script>
 
-    <script src="js/lib/threejs/shaders/CopyShader.js"></script>
-    <script src="js/shaders/threshold.js"></script>
-    <script src="js/shaders/warp.js"></script>
-    
-    <script src="js/lib/threejs/postprocessing/EffectComposer.js"></script>
-    <script src="js/lib/threejs/postprocessing/RenderPass.js"></script>
-    <script src="js/lib/threejs/postprocessing/ShaderPass.js"></script>
-    <script src="js/lib/threejs/postprocessing/MaskPass.js"></script>
+    <script src="js/shaders/camera.js"></script>
     
     <script src="js/lib/stats.min.js"></script>
     <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
@@ -43,6 +36,7 @@
 <div id="camera0" class="camera">
   <div class="label">Camera #</div>
   <video id="input0" autoplay width="640" height="480" class="webcam"></video>
+  <canvas id="canvas0"  width="640" height="480" class="hidden"></canvas>
   <div class="crop">
     <canvas class="vertexCanvas" width="640" height="480"></canvas>
     <div class="vertexcontainer">
@@ -61,7 +55,8 @@ var CONFIG_HIDE_DELAY = 10;
 
 var config = {
   soft: 0.001,
-  threshold: 0.3,
+  threshold: 0.075,
+  detectMotion: true,
   showCamera: true,
   showFPS: true,
   camera: ''
@@ -72,9 +67,7 @@ $(function() {
     init();
     animate();
   
-  
-    var scene, camera, renderer, mesh, thresholdEffect, motionEffect, videoTexture, warpUniforms;
-    var container, video;
+    var container, video, renderer, videoTexture, uniforms, camera, scene,prevTexture, videoContext;
         
     function init(){
 
@@ -83,10 +76,17 @@ $(function() {
 
       var gui = new dat.GUI();
       gui.add(config, 'threshold',0,1).onChange(function(value) {
-          thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
+          uniforms[ 'threshold' ].value = config['threshold'];
       });
       gui.add(config, 'soft',0,1).onChange(function(value) {
-          thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
+          uniforms[ 'soft' ].value = config['soft'];
+      });
+      gui.add(config, 'detectMotion').onChange(function(value) {
+         if(!value){
+            videoContext.clearRect(0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+            prevTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
+            prevTexture.needsUpdate = true;
+         }
       });
       gui.add(config, 'showCamera').onChange(function(value) {
          if(value) $('body').addClass("show-camera");
@@ -124,7 +124,13 @@ $(function() {
         $('#menu').addClass('hidden');
         jQuery(gui.domElement).remove();
       }
-
+  
+      video = document.getElementById( 'input0' );
+      videoTexture = new THREE.Texture( video );
+      videoContext = document.getElementById('canvas0').getContext('2d');
+  
+      prevTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
+  
       scene = new THREE.Scene();
       camera = new THREE.Camera();
       scene.add(camera);
@@ -136,34 +142,24 @@ $(function() {
       renderer.domElement.className = renderer.domElement.className + " render output";
       renderer.autoClear = false;
       document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
-
-      video = document.getElementById( 'input0' );
-      videoTexture = new THREE.Texture( video );
   
-      warpUniforms = {
-        tDiffuse: { type: "t", value: videoTexture },
+      uniforms = {
+        tDiffuse:   { type: "t", value: videoTexture },
+        tPrevious:  { type: "t", value: prevTexture },
+        soft:       { type: "f", value: 0.001 },
+        threshold:  { type: "f", value: 0.075 },
         m:        { type: "m4", value: new THREE.Matrix4() }
       }
       var geometry = new THREE.PlaneGeometry( 2, 2);
       var material = new THREE.ShaderMaterial({
-        uniforms: warpUniforms,
-        vertexShader: THREE.WarpShader.vertexShader,
-        fragmentShader: THREE.WarpShader.fragmentShader
+        uniforms: uniforms,
+        vertexShader: THREE.CameraShader.vertexShader,
+        fragmentShader: THREE.CameraShader.fragmentShader
       })
       var mesh = new THREE.Mesh(geometry,material);
       mesh.material.depthTest = false;
       mesh.material.depthWrite = false;
       scene.add(mesh);
-
-      // postprocessing
-      composer = new THREE.EffectComposer( renderer );
-      composer.addPass( new THREE.RenderPass( scene, camera ) );
-      
-      thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
-      thresholdEffect.renderToScreen = true;
-      thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
-      thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
-      composer.addPass( thresholdEffect );
       
     }
 
@@ -172,8 +168,16 @@ $(function() {
       requestAnimationFrame( animate );
       if ( video.readyState === video.HAVE_ENOUGH_DATA ){
         videoTexture.needsUpdate = true;
+        if(!config.detectMotion){
+  
+        }
       }
-      composer.render();
+      renderer.render(scene, camera);
+      if(config.detectMotion && video.readyState === video.HAVE_ENOUGH_DATA ){
+        videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+        prevTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
+        prevTexture.needsUpdate = true;
+      }
       if(config['showFPS']) stats.update();
     }
 
@@ -230,7 +234,7 @@ $(function() {
                               m[2], m[6],m[10],m[14],
                               m[3], m[7],m[11],m[15]);
   
-        warpUniforms[ 'm' ].value = m;
+        uniforms[ 'm' ].value = m;
 
     };
 

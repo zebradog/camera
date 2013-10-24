@@ -9,7 +9,7 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
      <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
     
-    <script src="js/lib/threejs/three.min.js"></script>
+    <script src="js/lib/three.min.js"></script>
 
     <script src="js/lib/threejs/shaders/CopyShader.js"></script>
     <script src="js/shaders/threshold.js"></script>
@@ -43,6 +43,7 @@
 <div id="camera0" class="camera">
   <div class="label">Camera #</div>
   <video id="input0" autoplay width="640" height="480" class="webcam"></video>
+  <canvas id="canvas0"  width="640" height="480" class="hidden"></canvas>
   <div class="crop">
     <canvas class="vertexCanvas" width="640" height="480"></canvas>
     <div class="vertexcontainer">
@@ -132,10 +133,6 @@ $(function() {
       thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
       thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
       composer.addPass( thresholdEffect );
-
-      /*warpEffect = new THREE.ShaderPass( THREE.WarpShader );
-      warpEffect.renderToScreen = true;
-      composer.addPass( warpEffect );*/
   
       webcam.updateSources(function(s){
         for(var i = 0; i < s.length; i++){
@@ -149,6 +146,7 @@ $(function() {
               $container = $('#'+containerID);
               $container.animate({marginLeft: '+=40px',marginTop: '+=40px'}, 0);
               $container.children('.webcam').attr('id',videoID);
+              $container.children('canvas').attr('id','canvas'+i);
             }
 
             webcam.start(videoID,s[i]);
