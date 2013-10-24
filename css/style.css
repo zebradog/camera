@@ -101,6 +101,7 @@ body{
   left:50%;
   display:none;
   visibility:hidden;
+  z-index:1000;
 }
 .show-camera .camera{
   display:block;

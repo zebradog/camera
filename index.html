@@ -70,7 +70,7 @@ $(function() {
     animate();
   
   
-    var scene, camera, renderer, mesh, warpEffect, videoTexture;
+    var scene, camera, renderer, mesh, thresholdEffect, motionEffect, videoTexture, warpUniforms;
     var container, video;
         
     function init(){
@@ -137,7 +137,17 @@ $(function() {
       video = document.getElementById( 'input0' );
       videoTexture = new THREE.Texture( video );
   
-      mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), new THREE.MeshBasicMaterial( { map: videoTexture } ) );
+      warpUniforms = {
+        tDiffuse: { type: "t", value: videoTexture },
+        m:        { type: "m4", value: new THREE.Matrix4() }
+      }
+      var geometry = new THREE.PlaneGeometry( 2, 2);
+      var material = new THREE.ShaderMaterial({
+        uniforms: warpUniforms,
+        vertexShader: THREE.WarpShader.vertexShader,
+        fragmentShader: THREE.WarpShader.fragmentShader
+      })
+      var mesh = new THREE.Mesh(geometry,material);
       mesh.material.depthTest = false;
       mesh.material.depthWrite = false;
       scene.add(mesh);
@@ -147,13 +157,10 @@ $(function() {
       composer.addPass( new THREE.RenderPass( scene, camera ) );
       
       thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
+      thresholdEffect.renderToScreen = true;
       thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
       thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
       composer.addPass( thresholdEffect );
-
-      warpEffect = new THREE.ShaderPass( THREE.WarpShader );
-      warpEffect.renderToScreen = true;
-      composer.addPass( warpEffect );
       
     }
 
@@ -220,7 +227,7 @@ $(function() {
                               m[2], m[6],m[10],m[14],
                               m[3], m[7],m[11],m[15]);
   
-        warpEffect.uniforms[ 'm' ].value = m;
+        warpUniforms[ 'm' ].value = m;
 
     };
 
