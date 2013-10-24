@@ -11,6 +11,9 @@ body{
   position:absolute;
   z-index:10;
 }
+#menu *{
+  margin-right:10px;
+}
 
 .hidden{
   visibility:hidden;
