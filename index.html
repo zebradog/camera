@@ -83,7 +83,7 @@ $(function() {
       });
       gui.add(config, 'detectMotion').onChange(function(value) {
          if(!value){
-            videoContext.clearRect(0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+            videoContext.clearRect(0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
             prevTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
             prevTexture.needsUpdate = true;
          }
@@ -165,18 +165,15 @@ $(function() {
 
     function animate() 
     {
-      requestAnimationFrame( animate );
-      if ( video.readyState === video.HAVE_ENOUGH_DATA ){
-        videoTexture.needsUpdate = true;
-        if(!config.detectMotion){
-  
-        }
-      }
+      requestAnimationFrame(animate);
       renderer.render(scene, camera);
-      if(config.detectMotion && video.readyState === video.HAVE_ENOUGH_DATA ){
-        videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
-        prevTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
-        prevTexture.needsUpdate = true;
+      if(video.readyState === video.HAVE_ENOUGH_DATA){
+        videoTexture.needsUpdate = true;
+        if(config.detectMotion ){
+          videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+          prevTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
+          prevTexture.needsUpdate = true;
+        }
       }
       if(config['showFPS']) stats.update();
     }

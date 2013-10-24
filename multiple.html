@@ -11,14 +11,7 @@
     
     <script src="js/lib/three.min.js"></script>
 
-    <script src="js/lib/threejs/shaders/CopyShader.js"></script>
-    <script src="js/shaders/threshold.js"></script>
-    <script src="js/shaders/warp.js"></script>
-    
-    <script src="js/lib/threejs/postprocessing/EffectComposer.js"></script>
-    <script src="js/lib/threejs/postprocessing/RenderPass.js"></script>
-    <script src="js/lib/threejs/postprocessing/ShaderPass.js"></script>
-    <script src="js/lib/threejs/postprocessing/MaskPass.js"></script>
+    <script src="js/shaders/camera.js"></script>
     
     <script src="js/lib/stats.min.js"></script>
     <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
@@ -62,7 +55,8 @@ var CONFIG_HIDE_DELAY = 10;
 
 var config = {
   soft: 0.001,
-  threshold: 0.3,
+  threshold: 0.075,
+  detectMotion: true,
   showCamera: true,
   showFPS: true,
   camera: ''
@@ -73,7 +67,7 @@ $(function() {
     init();
     animate();
   
-    var scene, camera, renderer, video, videoTexture, uniforms;
+    var scene, camera, renderer, video, videoTexture, prevTexture, videoContxt, uniforms;
         
     function init(){
 
@@ -81,15 +75,28 @@ $(function() {
       document.body.appendChild( stats.domElement );
   
       video = new Array();
+      videoContext = new Array();
       videoTexture = new Array();
+      prevTexture = new Array();
       uniforms = new Array();
 
       var gui = new dat.GUI();
       gui.add(config, 'threshold',0,1).onChange(function(value) {
-          thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
+          for(var i = 0; i < uniforms.length; i++)
+            uniforms[i]['threshold'].value = config['threshold'];
       });
       gui.add(config, 'soft',0,1).onChange(function(value) {
-          thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
+          for(var i = 0; i < uniforms.length; i++)
+            uniforms[i]['soft'].value = config['soft'];
+      });
+      gui.add(config, 'detectMotion').onChange(function(value) {
+         if(!value){
+            for(var i = 0; i < uniforms.length; i++){
+              videoContext[i].clearRect(0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
+              prevTexture[i].image.data = new Uint8Array(videoContext[i].getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
+              prevTexture[i].needsUpdate = true;
+            }
+         }
       });
       gui.add(config, 'showCamera').onChange(function(value) {
          if(value) $('body').addClass("show-camera");
@@ -124,16 +131,6 @@ $(function() {
       renderer.autoClear = false;
       document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
   
-      // postprocessing
-      composer = new THREE.EffectComposer( renderer );
-      composer.addPass( new THREE.RenderPass( scene, camera ) );
-      
-      thresholdEffect = new THREE.ShaderPass( THREE.ThresholdShader );
-      thresholdEffect.renderToScreen = true;
-      thresholdEffect.uniforms[ 'soft' ].value = config['soft'];
-      thresholdEffect.uniforms[ 'threshold' ].value = config['threshold'];
-      composer.addPass( thresholdEffect );
-  
       webcam.updateSources(function(s){
         for(var i = 0; i < s.length; i++){
             var containerID = "camera"+i;
@@ -154,14 +151,19 @@ $(function() {
             var geometry = new THREE.PlaneGeometry( 2/s.length, 2);
             video[i] = document.getElementById(videoID);
             videoTexture[i] = new THREE.Texture(video[i]);
+            videoContext[i] = document.getElementById('canvas'+i).getContext('2d');
+            prevTexture[i] = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
             uniforms[i] = {
-              tDiffuse: { type: "t", value: videoTexture[i] },
+              tDiffuse:   { type: "t", value: videoTexture[i] },
+              tPrevious:  { type: "t", value: prevTexture[i] },
+              soft:       { type: "f", value: 0.001 },
+              threshold:  { type: "f", value: 0.075 },
               m:        { type: "m4", value: new THREE.Matrix4() }
             }
             var material = new THREE.ShaderMaterial({
               uniforms: uniforms[i],
-              vertexShader: THREE.WarpShader.vertexShader,
-              fragmentShader: THREE.WarpShader.fragmentShader
+              vertexShader: THREE.CameraShader.vertexShader,
+              fragmentShader: THREE.CameraShader.fragmentShader
             })
             var mesh = new THREE.Mesh(geometry,material);
             mesh.position.x = -0.5+(i/s.length)*2;
@@ -250,12 +252,17 @@ $(function() {
     function animate() 
     {
       requestAnimationFrame( animate );
+      renderer.render(scene, camera);
       for(var i = 0; i < video.length; i++ ){
         if ( video[i].readyState === video[i].HAVE_ENOUGH_DATA ){
             videoTexture[i].needsUpdate = true;
+            if(config.detectMotion){
+              videoContext[i].drawImage(video[i],0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
+              prevTexture[i].image.data = new Uint8Array(videoContext[i].getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
+              prevTexture[i].needsUpdate = true;
+            }
         }
       }
-      composer.render();
       if(config['showFPS']) stats.update();
     }
 
