@@ -147,76 +147,8 @@ $(function() {
       if(config['showFPS']) stats.update();
     }
 
-
-    updateCrop = function() {
-  
-        var canvas = $('#camera0 .vertexCanvas').get(0);
-        var context = canvas.getContext("2d");
-        
-        //vertices of crop box
-        var p = [
-          new THREE.Vector2(),
-          new THREE.Vector2(),
-          new THREE.Vector2(),
-          new THREE.Vector2()
-        ];
-        //This is always the original source state
-        var screen = [
-          new THREE.Vector2(0,1),
-          new THREE.Vector2(1,1),
-          new THREE.Vector2(1,0),
-          new THREE.Vector2(0,0)
-        ];
-        context.strokeStyle = "rgba(0, 100, 200,0.5)";
-        context.fillStyle = "rgba(0, 100, 200,0.15)";
-        context.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
-  
-        //calculate and display the crop box and vertices
-        context.beginPath();
-        var first = true;
-
-        $("#camera0 .vertexcontainer .vertex").each(function() {
-            var position = $(this).position();
-            var i = $(this).attr('data-vertexnumber');
-            var x = position.left;
-            var y = position.top;
-            p[i].x =  x / SCREEN_WIDTH;
-            p[i].y =  1-(y / SCREEN_HEIGHT);
-            if (first) {
-                context.moveTo(x, y);
-                first = false;
-            } else {
-                context.lineTo(x, y);
-            }
-        });
-        context.closePath();
-        context.stroke();
-        context.fill();
-  
-        var m = getPerspective(screen,p);
-        //create a ofMatrix4x4 in column order
-        m = new THREE.Matrix4(m[0], m[4],m[8], m[12],
-                              m[1], m[5],m[9], m[13],
-                              m[2], m[6],m[10],m[14],
-                              m[3], m[7],m[11],m[15]);
-  
-        warpUniforms[ 'm' ].value = m;
-
-    };
-
-    $( ".vertex" ).draggable({
-        stack: "div",
-        snap: false,
-        handle: "div.handle",
-        start: function() {
-            $(".currenthandle").removeClass("currenthandle");
-            $(this).children("div.handle").addClass("currenthandle");
-        },
-        drag: updateCrop
-    });
     $("#camera0").draggable();
   
-   updateCrop();
 });
 </script>
 </body>
