@@ -46,5 +46,6 @@ webcam.start = function(id,sid){
     var msg = 'No camera available.';
     if (e.code == 1) msg = 'User denied access to use camera.'; 
     console.error(msg);
+    console.error(e);
   }
 }
