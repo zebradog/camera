@@ -164,7 +164,7 @@ $(function() {
               uniforms: uniforms[i],
               vertexShader: THREE.CameraShader.vertexShader,
               fragmentShader: THREE.CameraShader.fragmentShader
-            })
+            });
             var mesh = new THREE.Mesh(geometry,material);
             mesh.position.x = -0.5+(i/s.length)*2;
             mesh.material.depthTest = false;
