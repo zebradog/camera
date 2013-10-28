@@ -9,15 +9,21 @@ var webcam = {};
 
 webcam.sources = [];
 
+
 webcam.updateSources = function(callback){
   webcam.sources = [];
-  MediaStreamTrack.getSources(function(s){
-    for(var i = 0; i < s.length; i++){
-      if(s[i].kind == 'video')
-        webcam.sources.push(s[i].id);
-    }
+  if(typeof(MediaStreamTrack.getSources) != "undefined"){
+    MediaStreamTrack.getSources(function(s){
+      for(var i = 0; i < s.length; i++){
+        if(s[i].kind == 'video')
+          webcam.sources.push(s[i].id);
+      }
+      callback(webcam.sources);
+    });
+  }else{
+    webcam.sources.push(null);
     callback(webcam.sources);
-  });
+  }
 };
 
 /* use a <video> element to display webcam input
