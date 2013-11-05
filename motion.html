@@ -101,9 +101,8 @@ $(function() {
       }
   
       video = document.getElementById( 'input0' );
-      videoTexture = new THREE.Texture( video );
       videoContext = document.getElementById('canvas0').getContext('2d');
-
+      videoTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
       prevTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
   
       scene = new THREE.Scene();
@@ -137,17 +136,18 @@ $(function() {
 
     function animate() 
     {
-      requestAnimationFrame( animate );
       if ( video.readyState === video.HAVE_ENOUGH_DATA ){
+        prevTexture.image.data = videoTexture.image.data;
+        videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+        videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
+        if(prevTexture.image.data.length) {
+          prevTexture.needsUpdate = true;
+        }
         videoTexture.needsUpdate = true;
       }
       renderer.render(scene, camera);
-      if ( video.readyState === video.HAVE_ENOUGH_DATA ){
-        videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
-        prevTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
-        prevTexture.needsUpdate = true;
-      }
       if(config['showFPS']) stats.update();
+      requestAnimationFrame(animate);
     }
 
     $("#camera0").draggable();

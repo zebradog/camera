@@ -126,9 +126,8 @@ $(function() {
       }
   
       video = document.getElementById( 'input0' );
-      videoTexture = new THREE.Texture( video );
       videoContext = document.getElementById('canvas0').getContext('2d');
-  
+      videoTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
       prevTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
   
       scene = new THREE.Scene();
@@ -163,19 +162,20 @@ $(function() {
       
     }
 
-    function animate() 
+    function animate()
     {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
       if(video.readyState === video.HAVE_ENOUGH_DATA){
-        videoTexture.needsUpdate = true;
-        if(config.detectMotion ){
-          videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
-          prevTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
+        if(config.detectMotion && videoTexture.image.data.length){
+          prevTexture.image.data = videoTexture.image.data;
           prevTexture.needsUpdate = true;
         }
+        videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+        videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
+        videoTexture.needsUpdate = true;
       }
+      renderer.render(scene, camera);
       if(config['showFPS']) stats.update();
+      requestAnimationFrame(animate);
     }
 
 
