@@ -257,12 +257,12 @@ $(function() {
         if(video[i].readyState === video[i].HAVE_ENOUGH_DATA){
           var time = video[i].currentTime;
           if(time !== prevTime[i]){
-            if(config.detectMotion && videoTexture[i].image.data.length){
-              prevTexture[i].image.data = videoTexture[i].image.data;
-              prevTexture[i].needsUpdate = true;
-            }
             try {
               videoContext[i].drawImage(video[i], 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+              if(config.detectMotion && videoTexture[i].image.data.length){
+                prevTexture[i].image.data = videoTexture[i].image.data;
+                prevTexture[i].needsUpdate = true;
+              }
               videoTexture[i].image.data = new Uint8Array(videoContext[i].getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
               videoTexture[i].needsUpdate = true;
               prevTime[i] = time;
