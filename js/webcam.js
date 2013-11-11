@@ -35,8 +35,8 @@ webcam.start = function(id,sid){
 
   if (!navigator.getUserMedia)  console.error('navigator.getUserMedia() is not available.');
   else {
-    if(sid) navigator.getUserMedia({video: {optional: [{sourceId: sid}]}}, gotStream, noStream);
-    else navigator.getUserMedia({video: true}, gotStream, noStream);
+    if(sid) navigator.getUserMedia({video: {optional: [{sourceId: sid}]},audio:false}, gotStream, noStream);
+    else navigator.getUserMedia({video: true, audio:false}, gotStream, noStream);
   }
 
   function gotStream(stream) 
