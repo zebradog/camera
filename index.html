@@ -67,7 +67,7 @@ $(function() {
     init();
     animate();
   
-    var container, video, renderer, videoTexture, uniforms, camera, scene,prevTexture, videoContext;
+    var container, video, renderer, videoTexture, uniforms, camera, scene, prevTexture, videoContext, prevTime;
         
     function init(){
 
@@ -129,6 +129,7 @@ $(function() {
       videoContext = document.getElementById('canvas0').getContext('2d');
       videoTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
       prevTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
+      prevTime = -1;
   
       scene = new THREE.Scene();
       camera = new THREE.Camera();
@@ -161,17 +162,21 @@ $(function() {
       scene.add(mesh);
       
     }
-
+  
     function animate()
     {
       if(video.readyState === video.HAVE_ENOUGH_DATA){
-        if(config.detectMotion && videoTexture.image.data.length){
-          prevTexture.image.data = videoTexture.image.data;
-          prevTexture.needsUpdate = true;
+        var time = video.currentTime;
+        if(time !== prevTime){
+          if(config.detectMotion && videoTexture.image.data.length){
+            prevTexture.image.data = videoTexture.image.data;
+            prevTexture.needsUpdate = true;
+          }
+          videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+          videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
+          videoTexture.needsUpdate = true;
+          prevTime = time;
         }
-        videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
-        videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
-        videoTexture.needsUpdate = true;
       }
       renderer.render(scene, camera);
       if(config['showFPS']) stats.update();

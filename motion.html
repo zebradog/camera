@@ -55,7 +55,7 @@ $(function() {
     init();
     animate();
   
-    var container, video, renderer, videoTexture, uniforms, camera, scene, prevTexture, videoContext;
+    var container, video, renderer, videoTexture, uniforms, camera, scene, prevTexture, videoContext, prevTime;
         
     function init(){
 
@@ -104,6 +104,7 @@ $(function() {
       videoContext = document.getElementById('canvas0').getContext('2d');
       videoTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
       prevTexture = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
+      prevTime = -1;
   
       scene = new THREE.Scene();
       camera = new THREE.Camera();
@@ -136,14 +137,18 @@ $(function() {
 
     function animate() 
     {
-      if ( video.readyState === video.HAVE_ENOUGH_DATA ){
-        prevTexture.image.data = videoTexture.image.data;
-        videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
-        videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
-        if(prevTexture.image.data.length) {
-          prevTexture.needsUpdate = true;
+      if ( video.readyState === video.HAVE_ENOUGH_DATA){
+        var time = video.currentTime;
+        if(time !== prevTime){
+          prevTexture.image.data = videoTexture.image.data;
+          videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+          videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
+          if(prevTexture.image.data.length) {
+            prevTexture.needsUpdate = true;
+          }
+          videoTexture.needsUpdate = true;
+          prevTime = time;
         }
-        videoTexture.needsUpdate = true;
       }
       renderer.render(scene, camera);
       if(config['showFPS']) stats.update();

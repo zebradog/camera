@@ -67,7 +67,7 @@ $(function() {
     init();
     animate();
   
-    var scene, camera, renderer, video, videoTexture, prevTexture, videoContxt, uniforms;
+    var scene, camera, renderer, video, videoTexture, prevTexture, videoContxt, uniforms, prevTime;
         
     function init(){
 
@@ -78,6 +78,7 @@ $(function() {
       videoContext = new Array();
       videoTexture = new Array();
       prevTexture = new Array();
+      prevTime = new Array();
       uniforms = new Array();
 
       var gui = new dat.GUI();
@@ -150,9 +151,10 @@ $(function() {
             
             var geometry = new THREE.PlaneGeometry( 2/s.length, 2);
             video[i] = document.getElementById(videoID);
-            videoTexture[i] = new THREE.Texture(video[i]);
             videoContext[i] = document.getElementById('canvas'+i).getContext('2d');
+            videoTexture[i] = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
             prevTexture[i] = new THREE.DataTexture([],SCREEN_WIDTH,SCREEN_HEIGHT);
+            prevTime[i] = -1;
             uniforms[i] = {
               tDiffuse:   { type: "t", value: videoTexture[i] },
               tPrevious:  { type: "t", value: prevTexture[i] },
@@ -251,19 +253,24 @@ $(function() {
   
     function animate() 
     {
-      requestAnimationFrame( animate );
-      renderer.render(scene, camera);
       for(var i = 0; i < video.length; i++ ){
-        if ( video[i].readyState === video[i].HAVE_ENOUGH_DATA ){
-            videoTexture[i].needsUpdate = true;
-            if(config.detectMotion){
-              videoContext[i].drawImage(video[i],0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
-              prevTexture[i].image.data = new Uint8Array(videoContext[i].getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data.buffer);
+        if(video[i].readyState === video[i].HAVE_ENOUGH_DATA){
+          var time = video[i].currentTime;
+          if(time !== prevTime[i]){
+            if(config.detectMotion && videoTexture[i].image.data.length){
+              prevTexture[i].image.data = videoTexture[i].image.data;
               prevTexture[i].needsUpdate = true;
             }
+            videoContext[i].drawImage(video[i], 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+            videoTexture[i].image.data = new Uint8Array(videoContext[i].getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
+            videoTexture[i].needsUpdate = true;
+            prevTime[i] = time;
+          }
         }
       }
+      renderer.render(scene, camera);
       if(config['showFPS']) stats.update();
+      requestAnimationFrame(animate);
     }
 
 });
