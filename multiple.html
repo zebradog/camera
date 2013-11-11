@@ -261,10 +261,19 @@ $(function() {
               prevTexture[i].image.data = videoTexture[i].image.data;
               prevTexture[i].needsUpdate = true;
             }
-            videoContext[i].drawImage(video[i], 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
-            videoTexture[i].image.data = new Uint8Array(videoContext[i].getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
-            videoTexture[i].needsUpdate = true;
-            prevTime[i] = time;
+            try {
+              videoContext[i].drawImage(video[i], 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+              videoTexture[i].image.data = new Uint8Array(videoContext[i].getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
+              videoTexture[i].needsUpdate = true;
+              prevTime[i] = time;
+            }catch (e) {
+              if (e.name == "NS_ERROR_NOT_AVAILABLE") {
+                //firefox bug: https://bugzilla.mozilla.org/show_bug.cgi?id=879717
+                console.error(e);
+              } else {
+                throw e;
+              }
+            }
           }
         }
       }

@@ -141,13 +141,22 @@ $(function() {
         var time = video.currentTime;
         if(time !== prevTime){
           prevTexture.image.data = videoTexture.image.data;
-          videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
-          videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
-          if(prevTexture.image.data.length) {
-            prevTexture.needsUpdate = true;
+          try {
+            videoContext.drawImage(video, 0, 0,SCREEN_WIDTH,SCREEN_HEIGHT);
+            videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
+            if(prevTexture.image.data.length) {
+              prevTexture.needsUpdate = true;
+            }
+            videoTexture.needsUpdate = true;
+            prevTime = time;
+          }catch (e) {
+            if (e.name == "NS_ERROR_NOT_AVAILABLE") {
+              //firefox bug: https://bugzilla.mozilla.org/show_bug.cgi?id=879717
+              console.error(e);
+            } else {
+              throw e;
+            }
           }
-          videoTexture.needsUpdate = true;
-          prevTime = time;
         }
       }
       renderer.render(scene, camera);
