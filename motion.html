@@ -148,6 +148,7 @@ $(function() {
               prevTexture.needsUpdate = true;
             }
             videoTexture.needsUpdate = true;
+            if(config['showFPS']) stats.update();
             prevTime = time;
           }catch (e) {
             if (e.name == "NS_ERROR_NOT_AVAILABLE") {
@@ -160,7 +161,6 @@ $(function() {
         }
       }
       renderer.render(scene, camera);
-      if(config['showFPS']) stats.update();
       requestAnimationFrame(animate);
     }
 

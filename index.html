@@ -176,6 +176,7 @@ $(function() {
             }
             videoTexture.image.data = new Uint8Array(videoContext.getImageData(0,0,SCREEN_WIDTH, SCREEN_HEIGHT).data);
             videoTexture.needsUpdate = true;
+            if(config['showFPS']) stats.update();
             prevTime = time;
           }catch (e) {
             if (e.name == "NS_ERROR_NOT_AVAILABLE") {
@@ -188,7 +189,6 @@ $(function() {
         }
       }
       renderer.render(scene, camera);
-      if(config['showFPS']) stats.update();
       requestAnimationFrame(animate);
     }
 
