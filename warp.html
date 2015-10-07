@@ -5,22 +5,22 @@
 	<title>Camera</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    
+
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
      <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
-    
+
     <script src="js/lib/three.min.js"></script>
 
     <script src="js/shaders/warp.js"></script>
-    
+
     <script src="js/lib/stats.min.js"></script>
     <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
-    
+
     <script src="js/webcam.js"></script>
     <script src="js/perspective.js"></script>
-    
+
      <link href="css/style.css" rel="stylesheet" type="text/css">
-    
+
 </head>
 
 <body class="show-camera show-fps">
@@ -31,6 +31,7 @@
   <a href="motion.html">motion</a>
   <a href="threshold.html">threshold</a>
   <strong>warp</strong>
+  <a href="fx.html">fx</a>
 </div>
 
 <div id="camera0" class="camera">
@@ -62,9 +63,9 @@ $(function() {
 
     init();
     animate();
-  
+
     var container, video, renderer, videoTexture, uniforms, camera, scene;
-        
+
     function init(){
 
       stats = new Stats();
@@ -107,14 +108,14 @@ $(function() {
         $('#menu').addClass('hidden');
         jQuery(gui.domElement).remove();
       }
-  
+
       video = document.getElementById( 'input0' );
       videoTexture = new THREE.Texture( video );
-  
+
       scene = new THREE.Scene();
       camera = new THREE.Camera();
       scene.add(camera);
-      
+
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
       renderer.domElement.width = SCREEN_WIDTH;
@@ -122,7 +123,7 @@ $(function() {
       renderer.domElement.className = renderer.domElement.className + " render output";
       renderer.autoClear = false;
       document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
-  
+
       uniforms = {
         tDiffuse:   { type: "t", value: videoTexture },
         m:        { type: "m4", value: new THREE.Matrix4() }
@@ -137,10 +138,10 @@ $(function() {
       mesh.material.depthTest = false;
       mesh.material.depthWrite = false;
       scene.add(mesh);
-      
+
     }
 
-    function animate() 
+    function animate()
     {
       requestAnimationFrame( animate );
       if ( video.readyState === video.HAVE_ENOUGH_DATA ){
@@ -152,10 +153,10 @@ $(function() {
 
 
     updateCrop = function() {
-  
+
         var canvas = $('#camera0 .vertexCanvas').get(0);
         var context = canvas.getContext("2d");
-        
+
         //vertices of crop box
         var p = [
           new THREE.Vector2(),
@@ -173,7 +174,7 @@ $(function() {
         context.strokeStyle = "rgba(0, 100, 200,0.5)";
         context.fillStyle = "rgba(0, 100, 200,0.15)";
         context.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
-  
+
         //calculate and display the crop box and vertices
         context.beginPath();
         var first = true;
@@ -195,14 +196,14 @@ $(function() {
         context.closePath();
         context.stroke();
         context.fill();
-  
+
         var m = getPerspective(screen,p);
         //create a ofMatrix4x4 in column order
         m = new THREE.Matrix4(m[0], m[4],m[8], m[12],
                               m[1], m[5],m[9], m[13],
                               m[2], m[6],m[10],m[14],
                               m[3], m[7],m[11],m[15]);
-  
+
         uniforms[ 'm' ].value = m;
 
     };
@@ -218,7 +219,7 @@ $(function() {
         drag: updateCrop
     });
     $("#camera0").draggable();
-  
+
    updateCrop();
 });
 </script>

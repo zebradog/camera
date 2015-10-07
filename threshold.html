@@ -5,22 +5,22 @@
 	<title>Camera</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    
+
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
      <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
-    
+
     <script src="js/lib/three.min.js"></script>
 
     <script src="js/shaders/threshold.js"></script>
-    
+
     <script src="js/lib/stats.min.js"></script>
     <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
-    
+
     <script src="js/webcam.js"></script>
     <script src="js/perspective.js"></script>
-    
+
      <link href="css/style.css" rel="stylesheet" type="text/css">
-    
+
 </head>
 
 <body class="show-camera show-fps">
@@ -31,6 +31,7 @@
   <a href="motion.html">motion</a>
   <strong>threshold</strong>
   <a href="warp.html">warp</a>
+  <a href="fx.html">fx</a>
 </div>
 
 <div id="camera0" class="camera">
@@ -55,9 +56,9 @@ $(function() {
 
     init();
     animate();
-  
+
     var container, video, renderer, videoTexture, uniforms, camera, scene;
-        
+
     function init(){
 
       stats = new Stats();
@@ -106,14 +107,14 @@ $(function() {
         $('#menu').addClass('hidden');
         jQuery(gui.domElement).remove();
       }
-  
+
       video = document.getElementById( 'input0' );
       videoTexture = new THREE.Texture( video );
-  
+
       scene = new THREE.Scene();
       camera = new THREE.Camera();
       scene.add(camera);
-      
+
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
       renderer.domElement.width = SCREEN_WIDTH;
@@ -121,7 +122,7 @@ $(function() {
       renderer.domElement.className = renderer.domElement.className + " render output";
       renderer.autoClear = false;
       document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
-  
+
       uniforms = {
         tDiffuse:   { type: "t", value: videoTexture },
         soft:       { type: "f", value: 0.001 },
@@ -137,10 +138,10 @@ $(function() {
       mesh.material.depthTest = false;
       mesh.material.depthWrite = false;
       scene.add(mesh);
-      
+
     }
 
-    function animate() 
+    function animate()
     {
       requestAnimationFrame( animate );
       if ( video.readyState === video.HAVE_ENOUGH_DATA ){
@@ -151,7 +152,7 @@ $(function() {
     }
 
     $("#camera0").draggable();
-  
+
 });
 </script>
 </body>

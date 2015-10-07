@@ -5,22 +5,22 @@
 	<title>Camera</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    
+
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
      <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
-    
+
     <script src="js/lib/three.min.js"></script>
 
     <script src="js/shaders/camera.js"></script>
-    
+
     <script src="js/lib/stats.min.js"></script>
     <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
-    
+
     <script src="js/webcam.js"></script>
     <script src="js/perspective.js"></script>
-    
+
      <link href="css/style.css" rel="stylesheet" type="text/css">
-    
+
 </head>
 
 <body class="show-camera show-fps">
@@ -31,6 +31,7 @@
   <a href="motion.html">motion</a>
   <a href="threshold.html">threshold</a>
   <a href="warp.html">warp</a>
+  <a href="fx.html">fx</a>
 </div>
 
 <div id="camera0" class="camera">
@@ -66,14 +67,14 @@ $(function() {
 
     init();
     animate();
-  
+
     var scene, camera, renderer, video, videoTexture, prevTexture, videoContxt, uniforms, prevTime;
-        
+
     function init(){
 
       stats = new Stats();
       document.body.appendChild( stats.domElement );
-  
+
       video = new Array();
       videoContext = new Array();
       videoTexture = new Array();
@@ -119,11 +120,11 @@ $(function() {
         $('#menu').addClass('hidden');
         jQuery(gui.domElement).remove();
       }
-  
+
       scene = new THREE.Scene();
       camera = new THREE.Camera();
       scene.add(camera);
-      
+
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
       renderer.domElement.width = SCREEN_WIDTH;
@@ -131,13 +132,13 @@ $(function() {
       renderer.domElement.className = renderer.domElement.className + " render output";
       renderer.autoClear = false;
       document.body.insertBefore(renderer.domElement, document.body.childNodes[0]);
-  
+
       webcam.updateSources(function(s){
         for(var i = 0; i < s.length; i++){
             var containerID = "camera"+i;
             var videoID = "input"+i;
             var $container = $('#camera0');
-        
+
             //if more than one camera: clone.
             if(i > 0){
               $container.clone().attr('id',containerID).appendTo('body');
@@ -148,7 +149,7 @@ $(function() {
             }
 
             webcam.start(videoID,s[i]);
-            
+
             var geometry = new THREE.PlaneGeometry( 2/s.length, 2);
             video[i] = document.getElementById(videoID);
             videoContext[i] = document.getElementById('canvas'+i).getContext('2d');
@@ -172,14 +173,14 @@ $(function() {
             mesh.material.depthTest = false;
             mesh.material.depthWrite = false;
             scene.add(mesh);
-            
+
             $container.children('.label').text('camera '+i);
-            
+
             $container.draggable().on('mousedown', function(event) {
               $('.camera').css('z-index','1000');
               $(this).css('z-index','1001');
             });
-            
+
             $(".vertex",$container).draggable({
                 stack: "div",
                 snap: false,
@@ -193,7 +194,7 @@ $(function() {
                   var cameraIndex = parseInt($container.attr('id').replace('camera',''));
                   var canvas = $(".vertexCanvas",$container).get(0);
                   var context = canvas.getContext("2d");
-                  
+
                   //vertices of crop box
                   var p = [
                     new THREE.Vector2(),
@@ -211,7 +212,7 @@ $(function() {
                   context.strokeStyle = "rgba(0, 100, 200,0.5)";
                   context.fillStyle = "rgba(0, 100, 200,0.15)";
                   context.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
-            
+
                   //calculate and display the crop box and vertices
                   context.beginPath();
                   var first = true;
@@ -233,7 +234,7 @@ $(function() {
                   context.closePath();
                   context.stroke();
                   context.fill();
-            
+
                   var m = getPerspective(screen,p);
                   //create a ofMatrix4x4 in column order
                   uniforms[cameraIndex]['m'].value = new THREE.Matrix4(
@@ -241,17 +242,17 @@ $(function() {
                                         m[1], m[5],m[9], m[13],
                                         m[2], m[6],m[10],m[14],
                                         m[3], m[7],m[11],m[15]);
-            
+
 
               } //end drag handler
           }); //end vertices
-          
+
         } //end loop over video sources
-        
+
       }); //end on update video sources
     }
-  
-    function animate() 
+
+    function animate()
     {
       for(var i = 0; i < video.length; i++ ){
         if(video[i].readyState === video[i].HAVE_ENOUGH_DATA){
