@@ -40,12 +40,32 @@ var SCREEN_WIDTH = 640;
 var CONFIG_HIDE_DELAY = 10;
 
 var config = {
-  radius: 10,
-  brightness: 0.75,
-	angle: 0,
   showCamera: false,
   showFPS: true,
   camera: ''
+};
+
+var efx = {
+	brightnessContrast: {
+		enable: false,
+		brightness: 0,
+		contrast: 0
+	},
+	hueSaturation: {
+		enable: false,
+		hue: 0,
+		saturation: 0
+	},
+	lensBlur: {
+		enable: true,
+		radius: 10,
+		brightness: 0.75,
+		angle: 0,
+	},
+	zoomBlur: {
+		enable: false,
+		strength: 0.3
+	}
 };
 
 $(function() {
@@ -58,9 +78,25 @@ $(function() {
     document.body.appendChild( stats.domElement );
 
     var gui = new dat.GUI();
-    gui.add(config, 'radius',0,50);
-    gui.add(config, 'brightness',-1.0,1.0);
-    gui.add(config, 'angle',-3.141592653589793,3.141592653589793);
+
+		//adjustment fx
+		var f0 = gui.addFolder('Adjust');
+		var f1 = f0.addFolder('Brightness / Contrast');
+		f1.add(efx['brightnessContrast'], 'enable');
+    f1.add(efx['brightnessContrast'], 'brightness',-1.0,1.0);
+    f1.add(efx['brightnessContrast'], 'contrast',-1.0,1.0);
+		var f1 = f0.addFolder('Hue / Saturation');
+		f1.add(efx['hueSaturation'], 'enable');
+    f1.add(efx['hueSaturation'], 'hue',-1.0,1.0);
+    f1.add(efx['hueSaturation'], 'saturation',-1.0,1.0);
+
+		f0 = gui.addFolder('Blur');
+		f1 = f0.addFolder('lensBlur');
+		f1.add(efx['lensBlur'], 'enable');
+    f1.add(efx['lensBlur'], 'radius',0,50);
+    f1.add(efx['lensBlur'], 'brightness',-1.0,1.0);
+    f1.add(efx['lensBlur'], 'angle',-3.141592653589793,3.141592653589793);
+
     gui.add(config, 'showCamera').onChange(function(value) {
        if(value) $('body').addClass("show-camera");
        else $('body').removeClass("show-camera");
@@ -106,7 +142,17 @@ $(function() {
     {
       if ( video.readyState === video.HAVE_ENOUGH_DATA ){
 				texture.loadContentsOf(video);
-				canvas.draw(texture).lensBlur(config['radius'],config['brightness'], config['angle']).update();
+				canvas.draw(texture);
+				$.each(efx,function(i,a){
+					if(a.enable){
+						var args = [];
+						$.each(a,function(j,b){
+							if(j != 'enable') args.push(b);
+						});
+						canvas[i].apply(canvas, args);
+					}
+				});
+				canvas.update();
       }
       if(config['showFPS']) stats.update();
 			requestAnimationFrame(animate);
