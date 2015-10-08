@@ -4,13 +4,17 @@ body{
 }
 
 .camera, a{
-    color:rgb(0, 100, 200);
+    color:rgb(0, 255, 255);
 }
 
 #menu{
   position:absolute;
   z-index:10;
-  color:#333;
+  color:#fff;
+  background:rgba(0,0,34,0.85);
+  bottom:0;
+  right:0;
+  padding:10px;
 }
 #menu *{
   margin-right:10px;
