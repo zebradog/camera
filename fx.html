@@ -45,6 +45,7 @@ var config = {
   camera: ''
 };
 
+//from http://evanw.github.io/glfx.js/demo/
 var efx = {
 	brightnessContrast: {
 		enable: false,
@@ -56,15 +57,104 @@ var efx = {
 		hue: 0,
 		saturation: 0
 	},
+	vibrance:{
+		enable: false,
+		amount: 0.5
+	},
+	denoise:{
+		enable: false,
+		exponent: 20
+	},
+	unsharpMask:{
+		enable: false,
+		radius: 20,
+		strength: 2
+	},
+	noise:{
+		enable: false,
+		amount: 0.5
+	},
+	sepia:{
+		enable: false,
+		amount: 1
+	},
+	vignette:{
+		enable: false,
+		size: 0.57,
+		amount: 0.5
+	},
+	zoomBlur:{
+		enable: false,
+		centerX: 320,
+		centerY: 239.5,
+		strength: 0.3
+	},
+	triangleBlur:{
+		enable: false,
+		radius: 50
+	},
+	tiltShift:{
+		enable: false,
+		startX: 96,
+		startY: 359.25,
+		endX: 480,
+		endY: 287.4,
+		blurRadius: 15,
+		gradientRadius: 200
+	},
 	lensBlur: {
-		enable: true,
+		enable: false,
 		radius: 10,
 		brightness: 0.75,
 		angle: 0,
 	},
 	zoomBlur: {
 		enable: false,
+		centerX: 320,
+		centerY: 239.5,
 		strength: 0.3
+	},
+	swirl: {
+		enable: false,
+		centerX: 320,
+		centerY: 239.5,
+		radius: 200,
+		angle: 3
+	},
+	bulgePinch:{
+		enable: false,
+		centerX: 320,
+		centerY: 239.5,
+		radius: 200,
+		strength: 0.5
+	},
+	ink:{
+		enable: false,
+		strength: 0.25
+	},
+	edgeWork:{
+		enable: false,
+		radius: 10
+	},
+	hexagonalPixelate:{
+		enable: false,
+		centerX: 320,
+		centerY: 239.5,
+		scale: 20
+	},
+	dotScreen:{
+		enable: false,
+		centerX: 320,
+		centerY: 239.5,
+		angle: 1.1,
+		size: 3
+	},
+	colorHalftone: {
+		enable: true,
+		x: 320,
+		y: 239.5,
+		angle: 0.33,
+		size: 7.5
 	}
 };
 
@@ -85,17 +175,89 @@ $(function() {
 		f1.add(efx['brightnessContrast'], 'enable');
     f1.add(efx['brightnessContrast'], 'brightness',-1.0,1.0);
     f1.add(efx['brightnessContrast'], 'contrast',-1.0,1.0);
-		var f1 = f0.addFolder('Hue / Saturation');
+		f1 = f0.addFolder('Hue / Saturation');
 		f1.add(efx['hueSaturation'], 'enable');
     f1.add(efx['hueSaturation'], 'hue',-1.0,1.0);
     f1.add(efx['hueSaturation'], 'saturation',-1.0,1.0);
+		f1 = f0.addFolder('Vibrance');
+		f1.add(efx['vibrance'], 'enable');
+		f1.add(efx['vibrance'], 'amount',-1.0,1.0);
+		f1 = f0.addFolder('Denoise');
+		f1.add(efx['denoise'], 'enable');
+		f1.add(efx['denoise'], 'exponent',0,50.0);
+		f1 = f0.addFolder('Unsharp Mask');
+		f1.add(efx['unsharpMask'], 'enable');
+		f1.add(efx['unsharpMask'], 'radius',0,200.0);
+		f1.add(efx['unsharpMask'], 'strength',0,5);
+		f1 = f0.addFolder('Noise');
+		f1.add(efx['noise'], 'enable');
+		f1.add(efx['noise'], 'amount',-1.0,1.0);
+		f1 = f0.addFolder('Sepia');
+		f1.add(efx['sepia'], 'enable');
+		f1.add(efx['sepia'], 'amount',0,1.0);
+		f1 = f0.addFolder('Vignette');
+		f1.add(efx['vignette'], 'enable');
+		f1.add(efx['vignette'], 'size',0,1.0);
+		f1.add(efx['vignette'], 'amount',0,1.0);
 
 		f0 = gui.addFolder('Blur');
-		f1 = f0.addFolder('lensBlur');
+		f1 = f0.addFolder('Lens Blur');
 		f1.add(efx['lensBlur'], 'enable');
     f1.add(efx['lensBlur'], 'radius',0,50);
     f1.add(efx['lensBlur'], 'brightness',-1.0,1.0);
     f1.add(efx['lensBlur'], 'angle',-3.141592653589793,3.141592653589793);
+		f1 = f0.addFolder('Zoom Blur');
+		f1.add(efx['zoomBlur'], 'enable');
+		f1.add(efx['zoomBlur'], 'centerX',0,SCREEN_WIDTH);
+		f1.add(efx['zoomBlur'], 'centerY',0,SCREEN_HEIGHT);
+		f1.add(efx['zoomBlur'], 'strength',0,1.0);
+		f1 = f0.addFolder('Tilt Shift');
+		f1.add(efx['tiltShift'], 'enable');
+		f1.add(efx['tiltShift'], 'startX',0,SCREEN_WIDTH);
+		f1.add(efx['tiltShift'], 'startY',0,SCREEN_HEIGHT);
+		f1.add(efx['tiltShift'], 'endX',0,SCREEN_WIDTH);
+		f1.add(efx['tiltShift'], 'endY',0,SCREEN_HEIGHT);
+		f1.add(efx['tiltShift'], 'blurRadius',0,50);
+		f1.add(efx['tiltShift'], 'gradientRadius',0,400);
+
+		f0 = gui.addFolder('Warp');
+		f1 = f0.addFolder('Swirl');
+		f1.add(efx['swirl'], 'enable');
+		f1.add(efx['swirl'], 'centerX',0,SCREEN_WIDTH);
+		f1.add(efx['swirl'], 'centerY',0,SCREEN_HEIGHT);
+		f1.add(efx['swirl'], 'angle',-25,25);
+		f1.add(efx['swirl'], 'radius',0,600);
+		f1 = f0.addFolder('Bulge / Pinch');
+		f1.add(efx['bulgePinch'], 'enable');
+		f1.add(efx['bulgePinch'], 'centerX',0,SCREEN_WIDTH);
+		f1.add(efx['bulgePinch'], 'centerY',0,SCREEN_HEIGHT);
+		f1.add(efx['bulgePinch'], 'strength',-1,1);
+		f1.add(efx['bulgePinch'], 'radius',0,600);
+
+		f0 = gui.addFolder('Fun');
+		f1 = f0.addFolder('Ink');
+		f1.add(efx['ink'], 'enable');
+		f1.add(efx['ink'], 'strength',0,1.0);
+		f1 = f0.addFolder('Edge Work');
+		f1.add(efx['edgeWork'], 'enable');
+		f1.add(efx['edgeWork'], 'radius',0,200);
+		f1 = f0.addFolder('Hexagonal Pixelate');
+		f1.add(efx['hexagonalPixelate'], 'enable');
+		f1.add(efx['hexagonalPixelate'], 'centerX',0,SCREEN_WIDTH);
+		f1.add(efx['hexagonalPixelate'], 'centerY',0,SCREEN_HEIGHT);
+		f1.add(efx['hexagonalPixelate'], 'scale',10,100);
+		f1 = f0.addFolder('Dot Screen');
+		f1.add(efx['dotScreen'], 'enable');
+		f1.add(efx['dotScreen'], 'centerX',0,SCREEN_WIDTH);
+		f1.add(efx['dotScreen'], 'centerY',0,SCREEN_HEIGHT);
+		f1.add(efx['dotScreen'], 'angle',0,1.5707963267948966);
+		f1.add(efx['dotScreen'], 'size',3,20);
+		f1 = f0.addFolder('Color Halftone');
+		f1.add(efx['colorHalftone'], 'enable');
+    f1.add(efx['colorHalftone'], 'angle',0,1.5707963267948966);
+    f1.add(efx['colorHalftone'], 'size',3,20);
+		f0.open();
+		f1.open();
 
     gui.add(config, 'showCamera').onChange(function(value) {
        if(value) $('body').addClass("show-camera");
